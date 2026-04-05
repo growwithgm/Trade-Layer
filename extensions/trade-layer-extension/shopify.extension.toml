@@ -1,6 +1,7 @@
 api_version = "2024-04"
 
 [[extensions]]
+uid = "8d2a9439-3440-f649-5ae9-e014803ea385d9664299"
 type = "theme"
 name = "TradeLayer B2B Pricing"
 handle = "trade-layer-b2b-pricing"
