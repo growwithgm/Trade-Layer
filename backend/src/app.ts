@@ -1,14 +1,21 @@
 import express from 'express';
 import morgan from 'morgan';
 import helmet from 'helmet';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { shopify } from './shopify.js';
 import { authRouter, apiRouter, webhooksRouter } from './routes/index.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Built frontend lands in backend/dist/public (Vite outDir: ../backend/dist/public)
+// At runtime __dirname is backend/dist, so public is one level down.
+const FRONTEND_DIST = join(__dirname, 'public');
 
 export function createApp() {
   const app = express();
 
-  // Security headers. Helmet's frameguard and CSP are disabled here because
-  // shopify-app-express sets the correct frame-ancestors CSP for embedded apps.
   app.use(
     helmet({
       frameguard: false,
@@ -18,25 +25,32 @@ export function createApp() {
 
   app.use(morgan('dev'));
 
-  // Webhook route — must use raw body so HMAC verification works.
+  // Webhook route — raw body required for HMAC verification.
   app.use('/webhooks', express.raw({ type: 'application/json' }), webhooksRouter);
 
-  // OAuth routes — no session guard on these.
+  // OAuth routes — no session guard.
   app.use(authRouter);
+
+  // IMPORTANT: Serve static assets BEFORE ensureInstalledOnShop().
+  // If static files come after, Shopify middleware intercepts .js/.css requests
+  // and returns 400s instead of the actual files.
+  app.use(express.static(FRONTEND_DIST));
 
   // Authenticated API routes.
   app.use(express.json());
   app.use('/api/*', shopify.validateAuthenticatedSession());
   app.use('/api', apiRouter);
 
-  // Serve the React SPA for all other routes.
-  // ensureInstalledOnShop() checks the session JWT and redirects to /auth if needed.
+  // Shopify session guard — only for page (non-asset, non-API) requests.
   app.use(shopify.ensureInstalledOnShop());
-  app.use(express.static('dist/public'));
 
-  // Catch-all: serve index.html for client-side routing.
-  app.get('*', (_req, res) => {
-    res.sendFile('index.html', { root: 'dist/public' });
+  // Catch-all: serve index.html for React Router paths.
+  // Skip if the path has a file extension (assets) or starts with /api.
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.includes('.')) {
+      return next();
+    }
+    res.sendFile('index.html', { root: FRONTEND_DIST });
   });
 
   return app;
