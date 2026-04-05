@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Shopify App</title>
+    <title>TradeLayer</title>
+    <!-- App Bridge v4: CDN script auto-initializes from the ?host= URL param.
+         Vite replaces %VITE_SHOPIFY_API_KEY% at build time. -->
+    <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js" data-api-key="%VITE_SHOPIFY_API_KEY%"></script>
   </head>
   <body>
     <div id="root"></div>

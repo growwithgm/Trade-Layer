@@ -1,8 +1,20 @@
-import { useAuthenticatedFetch as useAppBridgeFetch } from '@shopify/app-bridge-react';
+import { useAppBridge } from '@shopify/app-bridge-react';
 
-// Wraps App Bridge's fetch so every request automatically includes
-// an `Authorization: Bearer <session-token>` header.
-// The backend validates this via shopify.validateAuthenticatedSession().
+// App Bridge v4: useAppBridge() returns the global `shopify` object.
+// shopify.idToken() returns a Promise<string> with the session JWT,
+// which the backend validates via shopify.validateAuthenticatedSession().
 export function useAuthenticatedFetch() {
-  return useAppBridgeFetch();
+  const shopify = useAppBridge();
+
+  return async (url: string, options: RequestInit = {}): Promise<Response> => {
+    const token = await shopify.idToken();
+    return fetch(url, {
+      ...options,
+      headers: {
+        ...options.headers,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+  };
 }
