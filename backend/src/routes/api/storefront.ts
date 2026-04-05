@@ -3,7 +3,7 @@ import { prisma } from '../../db/prismaClient.js';
 
 // These endpoints are called by the theme extension (storefront) and are
 // NOT protected by Shopify session auth — the shop is identified by the
-// shopDomain query param instead.
+// shopDomain query param instead. CORS is applied in app.ts.
 const router = Router();
 
 // GET /api/storefront/pricing?shopDomain=xxx&shopifyCustomerId=yyy&shopifyProductId=zzz
@@ -67,6 +67,47 @@ router.get('/pricing', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/storefront/quantity?shopDomain=xxx&shopifyProductId=yyy[&shopifyVariantId=zzz]
+// Returns the applicable quantity rule for a product/variant.
+router.get('/quantity', async (req: Request, res: Response) => {
+  try {
+    const { shopDomain, shopifyProductId, shopifyVariantId } = req.query as {
+      shopDomain?: string;
+      shopifyProductId?: string;
+      shopifyVariantId?: string;
+    };
+
+    if (!shopDomain || !shopifyProductId) {
+      res.status(400).json({ error: 'shopDomain and shopifyProductId are required' });
+      return;
+    }
+
+    const store = await prisma.store.findUnique({ where: { shopDomain }, select: { id: true } });
+    if (!store) {
+      res.json({ rule: null });
+      return;
+    }
+
+    // Variant-level rule takes precedence over product-level.
+    const rule = await prisma.quantityRule.findFirst({
+      where: {
+        storeId: store.id,
+        isActive: true,
+        OR: [
+          ...(shopifyVariantId ? [{ shopifyVariantId }] : []),
+          { shopifyVariantId: null, shopifyProductId },
+        ],
+      },
+      orderBy: { shopifyVariantId: 'desc' },
+    });
+
+    res.json({ rule });
+  } catch (error) {
+    console.error('GET /storefront/quantity error:', error);
+    res.status(500).json({ error: 'Failed to fetch quantity rule' });
+  }
+});
+
 // POST /api/storefront/cart/validate
 // Validates cart line items against quantity rules.
 // Body: { shopDomain: string, lineItems: [{ shopifyVariantId, shopifyProductId, quantity }] }
@@ -101,29 +142,17 @@ router.post('/cart/validate', async (req: Request, res: Response) => {
             { shopifyVariantId: null, shopifyProductId: item.shopifyProductId },
           ],
         },
-        orderBy: { shopifyVariantId: 'desc' }, // variant-level takes precedence
+        orderBy: { shopifyVariantId: 'desc' },
       });
 
       if (!rule) continue;
 
       if (item.quantity < rule.minQuantity) {
-        errors.push({
-          shopifyProductId: item.shopifyProductId,
-          shopifyVariantId: item.shopifyVariantId,
-          message: `Minimum order quantity is ${rule.minQuantity}`,
-        });
+        errors.push({ shopifyProductId: item.shopifyProductId, shopifyVariantId: item.shopifyVariantId, message: `Minimum order quantity is ${rule.minQuantity}` });
       } else if (rule.maxQuantity !== null && item.quantity > rule.maxQuantity) {
-        errors.push({
-          shopifyProductId: item.shopifyProductId,
-          shopifyVariantId: item.shopifyVariantId,
-          message: `Maximum order quantity is ${rule.maxQuantity}`,
-        });
+        errors.push({ shopifyProductId: item.shopifyProductId, shopifyVariantId: item.shopifyVariantId, message: `Maximum order quantity is ${rule.maxQuantity}` });
       } else if (rule.stepQuantity > 1 && (item.quantity - rule.minQuantity) % rule.stepQuantity !== 0) {
-        errors.push({
-          shopifyProductId: item.shopifyProductId,
-          shopifyVariantId: item.shopifyVariantId,
-          message: `Quantity must be in multiples of ${rule.stepQuantity} starting from ${rule.minQuantity}`,
-        });
+        errors.push({ shopifyProductId: item.shopifyProductId, shopifyVariantId: item.shopifyVariantId, message: `Quantity must be in multiples of ${rule.stepQuantity} starting from ${rule.minQuantity}` });
       }
     }
 
