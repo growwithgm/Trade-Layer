@@ -82,6 +82,7 @@ model CustomerGroup {
   storeId     String
   name        String
   description String?
+  shopifyTag  String?
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

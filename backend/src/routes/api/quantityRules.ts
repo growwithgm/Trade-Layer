@@ -69,6 +69,64 @@ router.post('/', async (req: Request, res: Response) => {
   }
 });
 
+// PUT /api/quantity-rules/quick-update
+// Upserts a quantity rule for a specific product, used by the Price Editor.
+router.put('/quick-update', async (req: Request, res: Response) => {
+  try {
+    const shopDomain: string = res.locals.shopify.session.shop;
+    const storeId = await getStoreId(shopDomain);
+
+    const { shopifyProductId, shopifyVariantId, minQuantity, stepQuantity, maxQuantity } =
+      req.body as {
+        shopifyProductId?: string;
+        shopifyVariantId?: string | null;
+        minQuantity?: number;
+        stepQuantity?: number;
+        maxQuantity?: number | null;
+      };
+
+    if (!shopifyProductId?.trim()) {
+      res.status(400).json({ error: 'shopifyProductId is required' });
+      return;
+    }
+
+    // Normalise to both numeric and GID forms so we find the existing record regardless of how it was stored
+    const numericId = shopifyProductId.match(/\/(\d+)$/)?.[1] ?? shopifyProductId;
+    const gidId = `gid://shopify/Product/${numericId}`;
+
+    const existing = await prisma.quantityRule.findFirst({
+      where: { storeId, shopifyProductId: { in: [shopifyProductId, numericId, gidId] }, shopifyVariantId: shopifyVariantId ?? null },
+    });
+
+    const rule = existing
+      ? await prisma.quantityRule.update({
+          where: { id: existing.id },
+          data: {
+            ...(minQuantity !== undefined && { minQuantity }),
+            ...(stepQuantity !== undefined && { stepQuantity }),
+            ...(maxQuantity !== undefined && { maxQuantity }),
+            isActive: true,
+          },
+        })
+      : await prisma.quantityRule.create({
+          data: {
+            storeId,
+            shopifyProductId,
+            shopifyVariantId: shopifyVariantId ?? null,
+            minQuantity: minQuantity ?? 1,
+            stepQuantity: stepQuantity ?? 1,
+            maxQuantity: maxQuantity ?? null,
+            isActive: true,
+          },
+        });
+
+    res.json({ quantityRule: rule });
+  } catch (error) {
+    console.error('PUT /quantity-rules/quick-update error:', error);
+    res.status(500).json({ error: 'Failed to upsert quantity rule' });
+  }
+});
+
 // PUT /api/quantity-rules/:id
 router.put('/:id', async (req: Request, res: Response) => {
   try {

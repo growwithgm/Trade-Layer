@@ -38,7 +38,7 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     const shopDomain: string = res.locals.shopify.session.shop;
     const storeId = await getStoreId(shopDomain);
-    const { name, description } = req.body as { name?: string; description?: string };
+    const { name, description, shopifyTag } = req.body as { name?: string; description?: string; shopifyTag?: string };
 
     if (!name?.trim()) {
       res.status(400).json({ error: 'name is required' });
@@ -46,7 +46,7 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     const group = await prisma.customerGroup.create({
-      data: { storeId, name: name.trim(), description: description?.trim() ?? null },
+      data: { storeId, name: name.trim(), description: description?.trim() ?? null, shopifyTag: shopifyTag?.trim().toLowerCase() || null },
     });
 
     res.status(201).json({ customerGroup: group });
@@ -62,9 +62,10 @@ router.put('/:id', async (req: Request, res: Response) => {
     const shopDomain: string = res.locals.shopify.session.shop;
     const storeId = await getStoreId(shopDomain);
     const { id } = req.params;
-    const { name, description, isActive } = req.body as {
+    const { name, description, shopifyTag, isActive } = req.body as {
       name?: string;
       description?: string;
+      shopifyTag?: string | null;
       isActive?: boolean;
     };
 
@@ -79,6 +80,7 @@ router.put('/:id', async (req: Request, res: Response) => {
       data: {
         ...(name !== undefined && { name: name.trim() }),
         ...(description !== undefined && { description: description.trim() || null }),
+        ...(shopifyTag !== undefined && { shopifyTag: shopifyTag ? shopifyTag.trim().toLowerCase() || null : null }),
         ...(isActive !== undefined && { isActive }),
       },
     });

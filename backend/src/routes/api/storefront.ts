@@ -6,12 +6,7 @@ import { prisma } from '../../db/prismaClient.js';
 const router = Router();
 
 // ── ID normalisation helpers ───────────────────────────────────────────────────
-// Shopify IDs appear in two formats: numeric ("8894191829218") and GID
-// ("gid://shopify/Product/8894191829218"). The admin UI and Liquid templates
-// may produce either form, so we always search for both.
-
 function toNumeric(id: string): string {
-  // "gid://shopify/Foo/12345" → "12345"
   const match = id.match(/\/(\d+)$/);
   return match ? match[1] : id;
 }
@@ -27,18 +22,39 @@ function bothFormats(type: 'Product' | 'ProductVariant' | 'Customer', id: string
   return Array.from(new Set([id, numeric, gid]));
 }
 
+// ── Fetch customer tags from Shopify Admin API ─────────────────────────────────
+async function fetchCustomerTags(shopDomain: string, accessToken: string, customerId: string): Promise<string[]> {
+  const numericId = toNumeric(customerId);
+  try {
+    const resp = await fetch(
+      `https://${shopDomain}/admin/api/2024-01/customers/${numericId}.json`,
+      { headers: { 'X-Shopify-Access-Token': accessToken } }
+    );
+    if (!resp.ok) return [];
+    const data = await resp.json() as { customer?: { tags?: string } };
+    return (data.customer?.tags || '')
+      .split(',')
+      .map((t: string) => t.trim().toLowerCase())
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
 // ── Debug / health endpoint ────────────────────────────────────────────────────
-// GET /api/storefront/test?shopDomain=xxx&shopifyCustomerId=yyy&shopifyProductId=zzz
 router.get('/test', async (req: Request, res: Response) => {
   try {
     const { shopDomain, shopifyCustomerId, shopifyProductId } = req.query as Record<string, string>;
 
     const store = shopDomain
-      ? await prisma.store.findUnique({ where: { shopDomain }, select: { id: true, shopDomain: true } })
+      ? await prisma.store.findUnique({ where: { shopDomain }, select: { id: true, shopDomain: true, accessToken: true } })
       : null;
 
     let memberships: { customerGroupId: string }[] = [];
     let allMembers: { shopifyCustomerId: string }[] = [];
+    let customerTags: string[] = [];
+    let tagMatchedGroups: { id: string; name: string; shopifyTag: string | null }[] = [];
+
     if (store && shopifyCustomerId) {
       const customerVariants = bothFormats('Customer', shopifyCustomerId);
       memberships = await prisma.customerGroupMember.findMany({
@@ -49,6 +65,17 @@ router.get('/test', async (req: Request, res: Response) => {
         select: { shopifyCustomerId: true },
         take: 20,
       });
+
+      // Tag-based lookup
+      if (store.accessToken) {
+        customerTags = await fetchCustomerTags(shopDomain, store.accessToken, shopifyCustomerId);
+        if (customerTags.length > 0) {
+          tagMatchedGroups = await prisma.customerGroup.findMany({
+            where: { storeId: store.id, isActive: true, shopifyTag: { in: customerTags } },
+            select: { id: true, name: true, shopifyTag: true },
+          });
+        }
+      }
     }
 
     let pricingRules: object[] = [];
@@ -66,6 +93,8 @@ router.get('/test', async (req: Request, res: Response) => {
       customerIdVariants: shopifyCustomerId ? bothFormats('Customer', shopifyCustomerId) : [],
       memberships,
       allMembersInDB: allMembers,
+      customerTags,
+      tagMatchedGroups,
       pricingRulesForStore: pricingRules,
     });
   } catch (error) {
@@ -83,13 +112,13 @@ router.get('/pricing', async (req: Request, res: Response) => {
       return;
     }
 
-    const store = await prisma.store.findUnique({ where: { shopDomain }, select: { id: true } });
+    const store = await prisma.store.findUnique({ where: { shopDomain }, select: { id: true, accessToken: true } });
     if (!store) {
       res.json({ rule: null, debug: 'store not found' });
       return;
     }
 
-    // Resolve customer group memberships — check all ID formats.
+    // ── 1. Manual group membership lookup ──────────────────────────────────────
     let groupIds: string[] = [];
     if (shopifyCustomerId) {
       const customerVariants = bothFormats('Customer', shopifyCustomerId);
@@ -100,7 +129,19 @@ router.get('/pricing', async (req: Request, res: Response) => {
       groupIds = memberships.map((m) => m.customerGroupId);
     }
 
-    // Build product/variant OR clauses covering both ID formats.
+    // ── 2. Tag-based fallback — fetch customer tags if no manual membership ────
+    if (groupIds.length === 0 && shopifyCustomerId && store.accessToken) {
+      const customerTags = await fetchCustomerTags(shopDomain, store.accessToken, shopifyCustomerId);
+      if (customerTags.length > 0) {
+        const tagGroups = await prisma.customerGroup.findMany({
+          where: { storeId: store.id, isActive: true, shopifyTag: { in: customerTags } },
+          select: { id: true },
+        });
+        groupIds = tagGroups.map((g) => g.id);
+      }
+    }
+
+    // ── 3. Find pricing rule candidates ────────────────────────────────────────
     const productVariants = bothFormats('Product', shopifyProductId);
     const variantVariants = shopifyVariantId ? bothFormats('ProductVariant', shopifyVariantId) : [];
 
@@ -109,18 +150,15 @@ router.get('/pricing', async (req: Request, res: Response) => {
         storeId: store.id,
         isActive: true,
         OR: [
-          // Variant-specific rules (all variant ID formats)
           ...(variantVariants.length ? [{ shopifyVariantId: { in: variantVariants } }] : []),
-          // Product-specific rules (no variant, all product ID formats)
           { shopifyVariantId: null, shopifyProductId: { in: productVariants } },
-          // Store-wide rules (no product, no variant)
           { shopifyVariantId: null, shopifyProductId: null },
         ],
       },
       orderBy: [{ priority: 'desc' }],
     });
 
-    // Pick best rule: customer-specific > group > store-wide.
+    // ── 4. Pick best rule: customer-specific > group > store-wide ──────────────
     const customerVariants = shopifyCustomerId ? bothFormats('Customer', shopifyCustomerId) : [];
     const rule =
       candidates.find((r) => r.shopifyCustomerId && customerVariants.includes(r.shopifyCustomerId)) ??
