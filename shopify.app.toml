@@ -1,5 +1,5 @@
 name = "TradeLayer"
-client_id = ""
+client_id = "92ed0ed9f3e32ac2520b3586d04e0651"
 application_url = "https://trade-layer.onrender.com"
 embedded = true
 
@@ -12,7 +12,7 @@ redirect_urls = [
 ]
 
 [webhooks]
-api_version = "2024-04"
+api_version = "2024-01"
 
 [pos]
 embedded = false
