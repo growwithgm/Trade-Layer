@@ -1,7 +1,7 @@
 /**
- * TradeLayer B2B Pricing & Quantity Rules
- * Fetches live pricing and quantity data from the TradeLayer backend API
- * and updates the product page UI for logged-in B2B customers.
+ * TradeLayer B2B Pricing & Quantity Enforcement
+ * Reads data attributes from #tradelayer-root and fetches live pricing
+ * from the TradeLayer backend API.
  */
 (function () {
   'use strict';
@@ -12,190 +12,203 @@
     var root = document.getElementById('tradelayer-root');
     if (!root) return;
 
-    var shopDomain    = root.dataset.shopDomain;
-    var customerId    = root.dataset.customerId;   // empty string if guest
-    var productId     = root.dataset.productId;
-    var variantId     = root.dataset.variantId;
-    var originalPrice = parseFloat(root.dataset.originalPrice) / 100; // Shopify stores cents
-    var loginUrl      = root.dataset.loginUrl || '/account/login';
-    var currency      = root.dataset.currency || '$';
-    var loginRequired = root.dataset.loginRequired === 'true';
+    var shopDomain     = root.dataset.shopDomain    || '';
+    var productId      = root.dataset.productId     || '';  // numeric, e.g. "8894191829218"
+    var variantId      = root.dataset.variantId     || '';
+    var customerId     = root.dataset.customerId    || '';  // numeric, e.g. "12345678"
+    var loggedIn       = root.dataset.customerLoggedIn === 'true';
+    var loginRequired  = root.dataset.loginRequired === 'true';
+    var loginUrl       = root.dataset.loginUrl      || '/account/login';
+    var hidePriceMsg   = root.dataset.hidePriceMessage || 'Login to see wholesale prices';
+    var originalPrice  = parseFloat(root.dataset.originalPrice || '0') / 100;
+    var currency       = root.dataset.currency      || '$';
 
-    // Guest + login-based pricing enforced → show login prompt only.
-    if (!customerId && loginRequired) {
-      renderLoginPrompt(root, loginUrl);
+    // Guest + login enforcement → show prompt, done.
+    if (!loggedIn && loginRequired) {
+      showLoginPrompt(root, hidePriceMsg, loginUrl);
       return;
     }
 
-    // Guest + not enforced → nothing to show.
-    if (!customerId) {
-      root.innerHTML = '';
+    // Guest + no enforcement → hide block entirely.
+    if (!loggedIn) {
+      root.style.display = 'none';
       return;
     }
 
-    // Logged-in customer → fetch pricing + quantity rules concurrently.
-    root.innerHTML = '<div class="tradelayer-loading">Loading your price\u2026</div>';
+    // Logged-in customer → fetch pricing and quantity rules concurrently.
+    setLoading(root, true);
 
-    var pricingParams = new URLSearchParams({ shopDomain: shopDomain, shopifyCustomerId: customerId, shopifyProductId: productId });
-    if (variantId) pricingParams.set('shopifyVariantId', variantId);
+    var pricingUrl  = API_BASE + '/api/storefront/pricing'
+      + '?shopDomain='           + encodeURIComponent(shopDomain)
+      + '&shopifyCustomerId='    + encodeURIComponent(customerId)
+      + '&shopifyProductId='     + encodeURIComponent(productId)
+      + (variantId ? '&shopifyVariantId=' + encodeURIComponent(variantId) : '');
 
-    var quantityParams = new URLSearchParams({ shopDomain: shopDomain, shopifyProductId: productId });
-    if (variantId) quantityParams.set('shopifyVariantId', variantId);
+    var quantityUrl = API_BASE + '/api/storefront/quantity'
+      + '?shopDomain='           + encodeURIComponent(shopDomain)
+      + '&shopifyProductId='     + encodeURIComponent(productId)
+      + (variantId ? '&shopifyVariantId=' + encodeURIComponent(variantId) : '');
 
     Promise.all([
-      fetch(API_BASE + '/api/storefront/pricing?' + pricingParams.toString()).then(function (r) { return r.json(); }),
-      fetch(API_BASE + '/api/storefront/quantity?' + quantityParams.toString()).then(function (r) { return r.json(); }),
+      fetch(pricingUrl).then(function (r) { return r.json(); }),
+      fetch(quantityUrl).then(function (r) { return r.json(); }),
     ]).then(function (results) {
-      var pricingData  = results[0];
-      var quantityData = results[1];
-      renderPricing(root, pricingData.rule, originalPrice, currency);
-      renderQuantityNotices(root, quantityData.rule);
-      attachQuantityWatcher(quantityData.rule);
+      setLoading(root, false);
+      renderPrice(root, results[0].rule, originalPrice, currency);
+      renderQuantityNotices(results[1].rule);
+      attachQtyWatcher(results[1].rule);
     }).catch(function (err) {
-      console.warn('[TradeLayer] Failed to load B2B data:', err);
-      root.innerHTML = '';
+      console.warn('[TradeLayer] API error:', err);
+      setLoading(root, false);
+      // Fail silently — customer sees normal theme price
     });
 
-    // Re-fetch on variant change (themes dispatch this event).
+    // Re-run on variant switch.
     document.addEventListener('variant:change', function (e) {
-      var detail = e.detail || {};
-      var variant = detail.variant;
-      if (!variant) return;
+      var v = e.detail && e.detail.variant;
+      if (!v) return;
+      var newVariantId    = String(v.id);
+      var newOriginalPrice = v.price / 100;
 
-      var newVariantId    = String(variant.id);
-      var newVariantGid   = 'gid://shopify/ProductVariant/' + newVariantId;
-      var newOriginalPrice = variant.price / 100;
+      setLoading(root, true);
 
-      root.innerHTML = '<div class="tradelayer-loading">Loading your price\u2026</div>';
+      var pu = API_BASE + '/api/storefront/pricing'
+        + '?shopDomain='        + encodeURIComponent(shopDomain)
+        + '&shopifyCustomerId=' + encodeURIComponent(customerId)
+        + '&shopifyProductId='  + encodeURIComponent(productId)
+        + '&shopifyVariantId='  + encodeURIComponent(newVariantId);
 
-      var pp = new URLSearchParams({ shopDomain: shopDomain, shopifyCustomerId: customerId, shopifyProductId: productId, shopifyVariantId: newVariantGid });
-      var qp = new URLSearchParams({ shopDomain: shopDomain, shopifyProductId: productId, shopifyVariantId: newVariantGid });
+      var qu = API_BASE + '/api/storefront/quantity'
+        + '?shopDomain='        + encodeURIComponent(shopDomain)
+        + '&shopifyProductId='  + encodeURIComponent(productId)
+        + '&shopifyVariantId='  + encodeURIComponent(newVariantId);
 
       Promise.all([
-        fetch(API_BASE + '/api/storefront/pricing?' + pp.toString()).then(function (r) { return r.json(); }),
-        fetch(API_BASE + '/api/storefront/quantity?' + qp.toString()).then(function (r) { return r.json(); }),
+        fetch(pu).then(function (r) { return r.json(); }),
+        fetch(qu).then(function (r) { return r.json(); }),
       ]).then(function (results) {
-        renderPricing(root, results[0].rule, newOriginalPrice, currency);
-        renderQuantityNotices(root, results[1].rule);
-        attachQuantityWatcher(results[1].rule);
-      }).catch(function () { root.innerHTML = ''; });
+        setLoading(root, false);
+        renderPrice(root, results[0].rule, newOriginalPrice, currency);
+        renderQuantityNotices(results[1].rule);
+        attachQtyWatcher(results[1].rule);
+      }).catch(function () { setLoading(root, false); });
     });
   }
 
-  // ── Rendering ──────────────────────────────────────────────────────────────
+  // ── Helpers ────────────────────────────────────────────────────────────────
 
-  function renderLoginPrompt(root, loginUrl) {
-    root.innerHTML =
-      '<div class="tradelayer-login-prompt">' +
-        '<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style="color:#008060" aria-hidden="true">' +
-          '<path d="M10 0C4.477 0 0 4.477 0 10s4.477 10 10 10 10-4.477 10-10S15.523 0 10 0zm0 4a3 3 0 110 6 3 3 0 010-6zm0 14a8 8 0 01-6.27-3.034C4.427 13.337 7.027 12 10 12s5.573 1.337 6.27 2.966A8 8 0 0110 18z"/>' +
-        '</svg>' +
-        '<span>Login to see wholesale prices &mdash; <a href="' + loginUrl + '">Log in</a></span>' +
-      '</div>';
+  function setLoading(root, on) {
+    var el = root.querySelector('.tradelayer-loading');
+    if (!el && on) {
+      el = document.createElement('div');
+      el.className = 'tradelayer-loading';
+      el.textContent = 'Loading your price\u2026';
+      root.appendChild(el);
+    } else if (el && !on) {
+      el.remove();
+    }
   }
 
   function fmt(currency, n) {
     return currency + n.toFixed(2);
   }
 
-  function renderPricing(root, rule, originalPrice, currency) {
-    // Clear previous price block.
+  function showLoginPrompt(root, msg, loginUrl) {
+    root.innerHTML =
+      '<div class="tradelayer-login-prompt">' +
+        '<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style="color:#008060" aria-hidden="true">' +
+          '<path d="M10 0C4.477 0 0 4.477 0 10s4.477 10 10 10 10-4.477 10-10S15.523 0 10 0zm0 4a3 3 0 110 6 3 3 0 010-6zm0 14a8 8 0 01-6.27-3.034C4.427 13.337 7.027 12 10 12s5.573 1.337 6.27 2.966A8 8 0 0110 18z"/>' +
+        '</svg>' +
+        '<span>' + msg + ' &mdash; <a href="' + loginUrl + '">Log in</a></span>' +
+      '</div>';
+  }
+
+  function renderPrice(root, rule, originalPrice, currency) {
+    // Remove previous price block if any.
     var old = root.querySelector('.tradelayer-price-block');
     if (old) old.remove();
 
-    if (!rule) {
-      // No rule — clear loading state and show nothing extra.
-      var loading = root.querySelector('.tradelayer-loading');
-      if (loading) loading.remove();
-      return;
-    }
+    if (!rule) return; // no rule → block stays empty, theme shows its own price
 
     var b2bPrice;
     if (rule.ruleType === 'percentage_discount') {
       b2bPrice = originalPrice * (1 - parseFloat(rule.value) / 100);
     } else {
+      // fixed_price
       b2bPrice = parseFloat(rule.value);
     }
 
-    var savings = originalPrice - b2bPrice;
+    var savings    = originalPrice - b2bPrice;
     var savingsPct = Math.round((savings / originalPrice) * 100);
 
     var block = document.createElement('div');
     block.className = 'tradelayer-price-block';
     block.innerHTML =
-      '<div style="margin-bottom:6px;">' +
-        '<span class="tradelayer-badge">Wholesale Price</span>' +
-      '</div>' +
+      '<div style="margin-bottom:6px;"><span class="tradelayer-badge">Wholesale Price</span></div>' +
       '<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">' +
         '<span class="tradelayer-b2b-price">' + fmt(currency, b2bPrice) + '</span>' +
         '<span class="tradelayer-original-price">RRP ' + fmt(currency, originalPrice) + '</span>' +
-        (savings > 0.005 ? '<span class="tradelayer-savings">You save ' + fmt(currency, savings) + ' (' + savingsPct + '%)</span>' : '') +
+        (savings > 0.005
+          ? '<span class="tradelayer-savings">You save ' + fmt(currency, savings) + ' (' + savingsPct + '%)</span>'
+          : '') +
       '</div>';
 
-    // Remove loading indicator, insert price block.
-    var loading = root.querySelector('.tradelayer-loading');
-    if (loading) loading.remove();
     root.insertBefore(block, root.firstChild);
   }
 
-  function renderQuantityNotices(root, rule) {
-    // Remove previous notices and error div.
-    var old = root.querySelector('.tradelayer-rules');
-    if (old) old.remove();
-    var oldErr = document.getElementById('tradelayer-qty-error');
-    if (oldErr) oldErr.remove();
+  function renderQuantityNotices(rule) {
+    var noticesEl = document.getElementById('tradelayer-qty-notices');
+    if (!noticesEl) return;
 
-    if (!rule) return;
+    if (!rule) {
+      noticesEl.style.display = 'none';
+      noticesEl.innerHTML = '';
+      return;
+    }
 
-    var icon = '<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 0C4.477 0 0 4.477 0 10s4.477 10 10 10 10-4.477 10-10S15.523 0 10 0zm1 15H9v-2h2v2zm0-4H9V5h2v6z"/></svg>';
+    var icon = '<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 0C4.477 0 0 4.477 0 10s4.477 10 10 10 10-4.477 10-10S15.523 0 10 0zm1 15H9v-2h2v2zm0-4H9V5h2v6z"/></svg> ';
     var notices = [];
 
-    if (rule.minQuantity > 1) {
-      notices.push(icon + ' Minimum order: <strong>' + rule.minQuantity + '</strong> units');
-    }
-    if (rule.stepQuantity > 1) {
-      notices.push(icon + ' Must be ordered in multiples of <strong>' + rule.stepQuantity + '</strong>');
-    }
-    if (rule.maxQuantity) {
-      notices.push(icon + ' Maximum order: <strong>' + rule.maxQuantity + '</strong> units');
+    if (rule.minQuantity > 1)
+      notices.push(icon + 'Minimum order: <strong>' + rule.minQuantity + '</strong> units');
+    if (rule.stepQuantity > 1)
+      notices.push(icon + 'Must be ordered in multiples of <strong>' + rule.stepQuantity + '</strong>');
+    if (rule.maxQuantity)
+      notices.push(icon + 'Maximum order: <strong>' + rule.maxQuantity + '</strong> units');
+
+    if (!notices.length) {
+      noticesEl.style.display = 'none';
+      return;
     }
 
-    if (!notices.length) return;
-
-    var rulesEl = document.createElement('div');
-    rulesEl.className = 'tradelayer-rules';
-    rulesEl.innerHTML = notices.map(function (n) {
+    noticesEl.innerHTML = notices.map(function (n) {
       return '<div class="tradelayer-notice">' + n + '</div>';
     }).join('');
-    root.appendChild(rulesEl);
-
-    var errEl = document.createElement('div');
-    errEl.className = 'tradelayer-qty-error';
-    errEl.id = 'tradelayer-qty-error';
-    root.appendChild(errEl);
+    noticesEl.style.display = '';
   }
 
-  function attachQuantityWatcher(rule) {
-    var qtyInput = document.querySelector('[name="quantity"], .quantity__input, input[data-quantity-input], #Quantity');
-    if (!qtyInput || !rule) return;
+  function attachQtyWatcher(rule) {
+    if (!rule) return;
 
     var min  = rule.minQuantity  || 1;
     var step = rule.stepQuantity || 1;
     var max  = rule.maxQuantity  || null;
 
-    qtyInput.setAttribute('min', min);
-    qtyInput.setAttribute('step', step);
-    if (max) qtyInput.setAttribute('max', max);
+    var qtyInput = document.querySelector(
+      '[name="quantity"], .quantity__input, input[data-quantity-input], #Quantity'
+    );
+    if (!qtyInput) return;
 
-    // Snap to minimum if current value is too low.
-    if (!qtyInput.value || parseInt(qtyInput.value) < min) {
-      qtyInput.value = min;
-    }
+    qtyInput.setAttribute('min', String(min));
+    qtyInput.setAttribute('step', String(step));
+    if (max) qtyInput.setAttribute('max', String(max));
+    if (!qtyInput.value || parseInt(qtyInput.value) < min) qtyInput.value = String(min);
 
     function validate() {
-      var qty = parseInt(qtyInput.value) || 0;
-      var errEl = document.getElementById('tradelayer-qty-error');
-      var msg = '';
+      var qty    = parseInt(qtyInput.value) || 0;
+      var errEl  = document.getElementById('tradelayer-qty-error');
+      var addBtn = document.querySelector('[name="add"], .product-form__submit, button[data-add-to-cart]');
+      var msg    = '';
 
       if (qty < min) {
         msg = 'Minimum quantity is ' + min;
@@ -209,9 +222,6 @@
         errEl.textContent = msg;
         errEl.classList.toggle('visible', !!msg);
       }
-
-      // Block add-to-cart when quantity is invalid.
-      var addBtn = document.querySelector('[name="add"], .product-form__submit, button[data-add-to-cart]');
       if (addBtn) addBtn.disabled = !!msg;
     }
 
@@ -220,7 +230,7 @@
     validate();
   }
 
-  // Boot.
+  // Boot when DOM ready.
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

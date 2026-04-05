@@ -1,22 +1,82 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../../db/prismaClient.js';
 
-// These endpoints are called by the theme extension (storefront) and are
-// NOT protected by Shopify session auth — the shop is identified by the
-// shopDomain query param instead. CORS is applied in app.ts.
+// These endpoints are called by the theme extension (storefront) — no Shopify session auth.
+// CORS is applied in app.ts.
 const router = Router();
 
-// GET /api/storefront/pricing?shopDomain=xxx&shopifyCustomerId=yyy&shopifyProductId=zzz
-// Returns the best applicable pricing rule for a customer+product combo.
-// Priority: variant-level > product-level; customer-specific > group > store-wide.
+// ── ID normalisation helpers ───────────────────────────────────────────────────
+// Shopify IDs appear in two formats: numeric ("8894191829218") and GID
+// ("gid://shopify/Product/8894191829218"). The admin UI and Liquid templates
+// may produce either form, so we always search for both.
+
+function toNumeric(id: string): string {
+  // "gid://shopify/Foo/12345" → "12345"
+  const match = id.match(/\/(\d+)$/);
+  return match ? match[1] : id;
+}
+
+function toGid(type: 'Product' | 'ProductVariant' | 'Customer', id: string): string {
+  if (id.startsWith('gid://')) return id;
+  return `gid://shopify/${type}/${id}`;
+}
+
+function bothFormats(type: 'Product' | 'ProductVariant' | 'Customer', id: string): string[] {
+  const numeric = toNumeric(id);
+  const gid = toGid(type, numeric);
+  return Array.from(new Set([id, numeric, gid]));
+}
+
+// ── Debug / health endpoint ────────────────────────────────────────────────────
+// GET /api/storefront/test?shopDomain=xxx&shopifyCustomerId=yyy&shopifyProductId=zzz
+router.get('/test', async (req: Request, res: Response) => {
+  try {
+    const { shopDomain, shopifyCustomerId, shopifyProductId } = req.query as Record<string, string>;
+
+    const store = shopDomain
+      ? await prisma.store.findUnique({ where: { shopDomain }, select: { id: true, shopDomain: true } })
+      : null;
+
+    let memberships: { customerGroupId: string }[] = [];
+    let allMembers: { shopifyCustomerId: string }[] = [];
+    if (store && shopifyCustomerId) {
+      const customerVariants = bothFormats('Customer', shopifyCustomerId);
+      memberships = await prisma.customerGroupMember.findMany({
+        where: { shopifyCustomerId: { in: customerVariants } },
+        select: { customerGroupId: true },
+      });
+      allMembers = await prisma.customerGroupMember.findMany({
+        select: { shopifyCustomerId: true },
+        take: 20,
+      });
+    }
+
+    let pricingRules: object[] = [];
+    if (store) {
+      pricingRules = await prisma.pricingRule.findMany({
+        where: { storeId: store.id },
+        select: { id: true, customerGroupId: true, shopifyProductId: true, ruleType: true, value: true, isActive: true },
+      });
+    }
+
+    res.json({
+      ok: true,
+      received: { shopDomain, shopifyCustomerId, shopifyProductId },
+      store: store ?? 'NOT FOUND',
+      customerIdVariants: shopifyCustomerId ? bothFormats('Customer', shopifyCustomerId) : [],
+      memberships,
+      allMembersInDB: allMembers,
+      pricingRulesForStore: pricingRules,
+    });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+// ── GET /api/storefront/pricing ────────────────────────────────────────────────
 router.get('/pricing', async (req: Request, res: Response) => {
   try {
-    const { shopDomain, shopifyCustomerId, shopifyProductId, shopifyVariantId } = req.query as {
-      shopDomain?: string;
-      shopifyCustomerId?: string;
-      shopifyProductId?: string;
-      shopifyVariantId?: string;
-    };
+    const { shopDomain, shopifyCustomerId, shopifyProductId, shopifyVariantId } = req.query as Record<string, string>;
 
     if (!shopDomain || !shopifyProductId) {
       res.status(400).json({ error: 'shopDomain and shopifyProductId are required' });
@@ -25,37 +85,45 @@ router.get('/pricing', async (req: Request, res: Response) => {
 
     const store = await prisma.store.findUnique({ where: { shopDomain }, select: { id: true } });
     if (!store) {
-      res.json({ rule: null });
+      res.json({ rule: null, debug: 'store not found' });
       return;
     }
 
-    // Find customer's groups if a customerId was provided.
+    // Resolve customer group memberships — check all ID formats.
     let groupIds: string[] = [];
     if (shopifyCustomerId) {
+      const customerVariants = bothFormats('Customer', shopifyCustomerId);
       const memberships = await prisma.customerGroupMember.findMany({
-        where: { shopifyCustomerId },
+        where: { shopifyCustomerId: { in: customerVariants } },
         select: { customerGroupId: true },
       });
       groupIds = memberships.map((m) => m.customerGroupId);
     }
 
-    // Fetch all active rules for this store+product combo, highest priority first.
+    // Build product/variant OR clauses covering both ID formats.
+    const productVariants = bothFormats('Product', shopifyProductId);
+    const variantVariants = shopifyVariantId ? bothFormats('ProductVariant', shopifyVariantId) : [];
+
     const candidates = await prisma.pricingRule.findMany({
       where: {
         storeId: store.id,
         isActive: true,
         OR: [
-          { shopifyVariantId: shopifyVariantId ?? null },
-          { shopifyVariantId: null, shopifyProductId },
+          // Variant-specific rules (all variant ID formats)
+          ...(variantVariants.length ? [{ shopifyVariantId: { in: variantVariants } }] : []),
+          // Product-specific rules (no variant, all product ID formats)
+          { shopifyVariantId: null, shopifyProductId: { in: productVariants } },
+          // Store-wide rules (no product, no variant)
           { shopifyVariantId: null, shopifyProductId: null },
         ],
       },
       orderBy: [{ priority: 'desc' }],
     });
 
-    // Pick best rule: customer-specific first, then group, then store-wide.
+    // Pick best rule: customer-specific > group > store-wide.
+    const customerVariants = shopifyCustomerId ? bothFormats('Customer', shopifyCustomerId) : [];
     const rule =
-      candidates.find((r) => r.shopifyCustomerId === shopifyCustomerId) ??
+      candidates.find((r) => r.shopifyCustomerId && customerVariants.includes(r.shopifyCustomerId)) ??
       candidates.find((r) => r.customerGroupId && groupIds.includes(r.customerGroupId)) ??
       candidates.find((r) => !r.shopifyCustomerId && !r.customerGroupId) ??
       null;
@@ -67,15 +135,10 @@ router.get('/pricing', async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/storefront/quantity?shopDomain=xxx&shopifyProductId=yyy[&shopifyVariantId=zzz]
-// Returns the applicable quantity rule for a product/variant.
+// ── GET /api/storefront/quantity ───────────────────────────────────────────────
 router.get('/quantity', async (req: Request, res: Response) => {
   try {
-    const { shopDomain, shopifyProductId, shopifyVariantId } = req.query as {
-      shopDomain?: string;
-      shopifyProductId?: string;
-      shopifyVariantId?: string;
-    };
+    const { shopDomain, shopifyProductId, shopifyVariantId } = req.query as Record<string, string>;
 
     if (!shopDomain || !shopifyProductId) {
       res.status(400).json({ error: 'shopDomain and shopifyProductId are required' });
@@ -83,19 +146,18 @@ router.get('/quantity', async (req: Request, res: Response) => {
     }
 
     const store = await prisma.store.findUnique({ where: { shopDomain }, select: { id: true } });
-    if (!store) {
-      res.json({ rule: null });
-      return;
-    }
+    if (!store) { res.json({ rule: null }); return; }
 
-    // Variant-level rule takes precedence over product-level.
+    const productVariants = bothFormats('Product', shopifyProductId);
+    const variantVariants = shopifyVariantId ? bothFormats('ProductVariant', shopifyVariantId) : [];
+
     const rule = await prisma.quantityRule.findFirst({
       where: {
         storeId: store.id,
         isActive: true,
         OR: [
-          ...(shopifyVariantId ? [{ shopifyVariantId }] : []),
-          { shopifyVariantId: null, shopifyProductId },
+          ...(variantVariants.length ? [{ shopifyVariantId: { in: variantVariants } }] : []),
+          { shopifyVariantId: null, shopifyProductId: { in: productVariants } },
         ],
       },
       orderBy: { shopifyVariantId: 'desc' },
@@ -108,10 +170,7 @@ router.get('/quantity', async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/storefront/cart/validate
-// Validates cart line items against quantity rules.
-// Body: { shopDomain: string, lineItems: [{ shopifyVariantId, shopifyProductId, quantity }] }
-// Returns: { valid: boolean, errors: [{ variantId, message }] }
+// ── POST /api/storefront/cart/validate ────────────────────────────────────────
 router.post('/cart/validate', async (req: Request, res: Response) => {
   try {
     const { shopDomain, lineItems } = req.body as {
@@ -125,21 +184,21 @@ router.post('/cart/validate', async (req: Request, res: Response) => {
     }
 
     const store = await prisma.store.findUnique({ where: { shopDomain }, select: { id: true } });
-    if (!store) {
-      res.json({ valid: true, errors: [] });
-      return;
-    }
+    if (!store) { res.json({ valid: true, errors: [] }); return; }
 
     const errors: Array<{ shopifyProductId: string; shopifyVariantId?: string; message: string }> = [];
 
     for (const item of lineItems) {
+      const productVariants = bothFormats('Product', item.shopifyProductId);
+      const variantVariants = item.shopifyVariantId ? bothFormats('ProductVariant', item.shopifyVariantId) : [];
+
       const rule = await prisma.quantityRule.findFirst({
         where: {
           storeId: store.id,
           isActive: true,
           OR: [
-            { shopifyVariantId: item.shopifyVariantId ?? null },
-            { shopifyVariantId: null, shopifyProductId: item.shopifyProductId },
+            ...(variantVariants.length ? [{ shopifyVariantId: { in: variantVariants } }] : []),
+            { shopifyVariantId: null, shopifyProductId: { in: productVariants } },
           ],
         },
         orderBy: { shopifyVariantId: 'desc' },
