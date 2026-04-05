@@ -1,0 +1,17 @@
+{
+  "tradelayer": {
+    "loading": "Loading your price...",
+    "login_to_see_price": "Login to see wholesale prices",
+    "login_link": "Log in",
+    "b2b_price_label": "Your price",
+    "original_price_label": "RRP",
+    "discount_label": "You save",
+    "moq_notice": "Minimum order: {{ quantity }} units",
+    "step_notice": "Must be ordered in multiples of {{ step }}",
+    "max_notice": "Maximum order: {{ quantity }} units",
+    "quantity_error_min": "Minimum quantity is {{ min }}",
+    "quantity_error_step": "Quantity must be in multiples of {{ step }} (starting from {{ min }})",
+    "quantity_error_max": "Maximum quantity is {{ max }}",
+    "wholesale_badge": "Wholesale Price"
+  }
+}
