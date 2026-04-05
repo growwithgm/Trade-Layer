@@ -3,6 +3,7 @@ import morgan from 'morgan';
 import helmet from 'helmet';
 import { shopify } from './shopify.js';
 import { authRouter, apiRouter, webhooksRouter } from './routes/index.js';
+import storefrontRouter from './routes/api/storefront.js';
 import { generateAppHTML } from './routes/frontend.js';
 import { config } from './config.js';
 
@@ -24,8 +25,12 @@ export function createApp() {
   // OAuth routes — no session guard.
   app.use(authRouter);
 
-  // Authenticated API routes.
   app.use(express.json());
+
+  // Public storefront endpoints (called by theme extension — no Shopify session).
+  app.use('/api/storefront', storefrontRouter);
+
+  // Authenticated API routes.
   app.use('/api/*', shopify.validateAuthenticatedSession());
   app.use('/api', apiRouter);
 
