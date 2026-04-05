@@ -22,8 +22,7 @@ export default defineConfig({
     },
   },
   build: {
-    // Production build goes into backend/dist/public so Express can serve it.
-    outDir: '../backend/dist/public',
+    outDir: 'dist',
     emptyOutDir: true,
   },
   define: {

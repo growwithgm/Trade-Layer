@@ -9,9 +9,10 @@ import { authRouter, apiRouter, webhooksRouter } from './routes/index.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Built frontend lands in backend/dist/public (Vite outDir: ../backend/dist/public)
-// At runtime __dirname is backend/dist, so public is one level down.
-const FRONTEND_DIST = join(__dirname, 'public');
+// At runtime __dirname = backend/dist.
+// The build script copies frontend/dist → backend/public, so:
+// backend/public is one level up from backend/dist.
+const publicPath = join(__dirname, '../public');
 
 export function createApp() {
   const app = express();
@@ -31,26 +32,36 @@ export function createApp() {
   // OAuth routes — no session guard.
   app.use(authRouter);
 
-  // IMPORTANT: Serve static assets BEFORE ensureInstalledOnShop().
-  // If static files come after, Shopify middleware intercepts .js/.css requests
-  // and returns 400s instead of the actual files.
-  app.use(express.static(FRONTEND_DIST));
+  // IMPORTANT: Serve static assets BEFORE ensureInstalledOnShop() and BEFORE
+  // any other middleware. This prevents Shopify auth middleware from intercepting
+  // .css/.js requests and returning 400s or HTML redirects.
+  app.use(
+    express.static(publicPath, {
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.css')) {
+          res.setHeader('Content-Type', 'text/css');
+        } else if (filePath.endsWith('.js')) {
+          res.setHeader('Content-Type', 'application/javascript');
+        }
+      },
+    }),
+  );
 
   // Authenticated API routes.
   app.use(express.json());
   app.use('/api/*', shopify.validateAuthenticatedSession());
   app.use('/api', apiRouter);
 
-  // Shopify session guard — only for page (non-asset, non-API) requests.
+  // Shopify session guard — page requests only (assets already handled above).
   app.use(shopify.ensureInstalledOnShop());
 
-  // Catch-all: serve index.html for React Router paths.
+  // Catch-all: serve index.html for React Router paths only.
   // Skip if the path has a file extension (assets) or starts with /api.
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api') || req.path.includes('.')) {
       return next();
     }
-    res.sendFile('index.html', { root: FRONTEND_DIST });
+    res.sendFile('index.html', { root: publicPath });
   });
 
   return app;
