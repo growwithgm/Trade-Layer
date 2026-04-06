@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../../db/prismaClient.js';
 
 const router = Router();
@@ -62,15 +63,29 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     const shopDomain: string = res.locals.shopify.session.shop;
     const storeId = await getStoreId(shopDomain);
-    const { name, description, shopifyTag } = req.body as { name?: string; description?: string; shopifyTag?: string };
+    const { name, handle, description, shopifyTag, parentGroupId, settings } = req.body as {
+      name?: string; handle?: string; description?: string;
+      shopifyTag?: string; parentGroupId?: string; settings?: Record<string, unknown>;
+    };
 
     if (!name?.trim()) {
       res.status(400).json({ error: 'name is required' });
       return;
     }
 
+    // Auto-generate handle from name if not provided
+    const resolvedHandle = (handle?.trim() || name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')) || null;
+
     const group = await prisma.customerGroup.create({
-      data: { storeId, name: name.trim(), description: description?.trim() ?? null, shopifyTag: shopifyTag?.trim().toLowerCase() || null },
+      data: {
+        storeId,
+        name: name.trim(),
+        handle: resolvedHandle,
+        description: description?.trim() ?? null,
+        shopifyTag: shopifyTag?.trim().toLowerCase() || null,
+        parentGroupId: parentGroupId || null,
+        settings: (settings ?? null) as Prisma.InputJsonValue | null,
+      },
     });
 
     res.status(201).json({ customerGroup: group });
@@ -86,11 +101,10 @@ router.put('/:id', async (req: Request, res: Response) => {
     const shopDomain: string = res.locals.shopify.session.shop;
     const storeId = await getStoreId(shopDomain);
     const { id } = req.params;
-    const { name, description, shopifyTag, isActive } = req.body as {
-      name?: string;
-      description?: string;
-      shopifyTag?: string | null;
-      isActive?: boolean;
+    const { name, handle, description, shopifyTag, parentGroupId, settings, isActive } = req.body as {
+      name?: string; handle?: string; description?: string;
+      shopifyTag?: string | null; parentGroupId?: string | null;
+      settings?: Record<string, unknown> | null; isActive?: boolean;
     };
 
     const existing = await prisma.customerGroup.findFirst({ where: { id, storeId } });
@@ -103,8 +117,11 @@ router.put('/:id', async (req: Request, res: Response) => {
       where: { id },
       data: {
         ...(name !== undefined && { name: name.trim() }),
+        ...(handle !== undefined && { handle: handle?.trim() || null }),
         ...(description !== undefined && { description: description.trim() || null }),
         ...(shopifyTag !== undefined && { shopifyTag: shopifyTag ? shopifyTag.trim().toLowerCase() || null : null }),
+        ...(parentGroupId !== undefined && { parentGroupId: parentGroupId || null }),
+        ...(settings !== undefined && { settings: (settings ?? null) as Prisma.InputJsonValue | null }),
         ...(isActive !== undefined && { isActive }),
       },
     });

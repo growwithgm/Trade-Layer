@@ -78,14 +78,17 @@ model ShopSettings {
 }
 
 model CustomerGroup {
-  id          String   @id @default(cuid())
-  storeId     String
-  name        String
-  description String?
-  shopifyTag  String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  storeId       String
+  name          String
+  handle        String?
+  description   String?
+  shopifyTag    String?
+  parentGroupId String?
+  settings      Json?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   store        Store                 @relation(fields: [storeId], references: [id], onDelete: Cascade)
   members      CustomerGroupMember[]
