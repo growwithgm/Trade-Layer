@@ -40,7 +40,19 @@ function serveHtml(fileName: string) {
 export function createApp() {
   const app = express();
 
+  // Disable helmet's default X-Frame-Options/CSP so we can set them manually.
   app.use(helmet({ frameguard: false, contentSecurityPolicy: false }));
+
+  // Allow Shopify admin to embed this app in an iframe.
+  // frame-ancestors replaces X-Frame-Options and must list the Shopify hosts.
+  app.use((_req, res, next) => {
+    res.removeHeader('X-Frame-Options');
+    res.setHeader(
+      'Content-Security-Policy',
+      "frame-ancestors https://*.myshopify.com https://admin.shopify.com https://shopify.com",
+    );
+    next();
+  });
   app.use(morgan('dev'));
 
   // Webhooks — raw body required for HMAC verification.

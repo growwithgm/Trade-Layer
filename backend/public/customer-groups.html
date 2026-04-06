@@ -385,10 +385,10 @@
           <div>
             <div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
               <span>Pricing rules (${rules.length})</span>
-              <a href="price-editor.html${qs}" style="font-size:12px;color:#5c59f2;font-weight:600">Price Editor →</a>
+              <a href="#" onclick="event.preventDefault();navigateTo('price-editor.html')" style="font-size:12px;color:#5c59f2;font-weight:600">Price Editor →</a>
             </div>
             <div>${rulesHtml}</div>
-            <a href="price-editor.html${qs}" class="btn" style="margin-top:12px;display:inline-flex">
+            <a href="#" onclick="event.preventDefault();navigateTo('price-editor.html')" class="btn" style="margin-top:12px;display:inline-flex">
               <i data-lucide="badge-dollar-sign"></i> Edit prices for this group
             </a>
           </div>
