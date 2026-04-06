@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Companies - TradeLayer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body class="app-shell">
+  <div class="topbar">Logged in via Shopify. If you need to modify teams or account details, please <a href="#" style="text-decoration:underline;font-weight:700">logout</a> and sign in with your TradeLayer account. <a href="#" style="text-decoration:underline">Learn more</a></div>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="store-switcher">
+          <div class="logo-badge">TL</div>
+          <div class="store-name">ibban.com</div>
+          <i data-lucide="chevron-down" class="chev"></i>
+        </div>
+      </div>
+      <nav id="sidebar-nav" class="sidebar-nav"></nav>
+      <div class="sidebar-foot">
+        <div class="foot-link"><i data-lucide="zap" class="w-4 h-4"></i><span>Popular addons</span></div>
+        <div class="foot-link"><i data-lucide="log-out" class="w-4 h-4"></i><span>Sign out</span></div>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="page">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Companies</h1>
+            <p class="page-subtitle">Manage all B2B company accounts, branches, spending controls, price lists, and account status from one page.</p>
+          </div>
+        </div>
+        
+    <div class="toolbar">
+      <div class="search"><i data-lucide="search"></i><input type="text" placeholder="Search companies..." /></div>
+      <button class="btn btn-primary"><i data-lucide="building-2"></i>Add company</button>
+    </div>
+    <div class="card">
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Company</th><th>Branches</th><th>Assigned price list</th><th>Credit</th><th>Net terms</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          <tr><td><strong>IBBAN Europe</strong><div class="muted">12 users across 2 branches</div></td><td>Madrid, Barcelona</td><td>IBBAN EUROPE S.L.</td><td>€50,000</td><td>Net 30</td><td><span class="badge badge-success">Active</span></td><td><button class="btn">Open</button></td></tr>
+          <tr><td><strong>Salon Pro Group</strong><div class="muted">8 users across 1 branch</div></td><td>Lisbon</td><td>Iberia Distributor Contract</td><td>€20,000</td><td>Net 15</td><td><span class="badge badge-success">Active</span></td><td><button class="btn">Open</button></td></tr>
+          <tr><td><strong>Prospect Retail Collective</strong><div class="muted">Quote-only onboarding</div></td><td>Valencia</td><td>None</td><td>€0</td><td>Prepaid</td><td><span class="badge badge-warning">Pending approval</span></td><td><button class="btn">Review</button></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    
+      </div>
+    </main>
+  </div>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

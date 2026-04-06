@@ -1,2 +1,1 @@
-# Build artifact — copied from frontend/dist at build time
-public/
+# public/ intentionally tracked — contains TradeLayer frontend HTML/CSS/JS

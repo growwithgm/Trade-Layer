@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Customer Groups - TradeLayer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body class="app-shell">
+  <div class="topbar">Logged in via Shopify. If you need to modify teams or account details, please <a href="#" style="text-decoration:underline;font-weight:700">logout</a> and sign in with your TradeLayer account. <a href="#" style="text-decoration:underline">Learn more</a></div>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="store-switcher">
+          <div class="logo-badge">TL</div>
+          <div class="store-name" id="store-name">My Store</div>
+          <i data-lucide="chevron-down" class="chev"></i>
+        </div>
+      </div>
+      <nav id="sidebar-nav" class="sidebar-nav"></nav>
+      <div class="sidebar-foot">
+        <div class="foot-link"><i data-lucide="zap" class="w-4 h-4"></i><span>Popular addons</span></div>
+        <div class="foot-link"><i data-lucide="log-out" class="w-4 h-4"></i><span>Sign out</span></div>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="page">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Customer Groups</h1>
+            <p class="page-subtitle">Segment buyers into groups to manage pricing, discounting, catalog visibility, and rules from one place.</p>
+          </div>
+        </div>
+
+    <!-- Create Group Modal -->
+    <div id="create-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;display:none;align-items:center;justify-content:center">
+      <div class="card" style="width:480px;padding:24px;background:#fff">
+        <h2 style="font-size:16px;font-weight:700;margin-bottom:16px">Create Customer Group</h2>
+        <label style="display:block;margin-bottom:12px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px">Name *</div>
+          <input id="new-group-name" class="field" style="width:100%" placeholder="e.g. Wholesale Customers" />
+        </label>
+        <label style="display:block;margin-bottom:12px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px">Description</div>
+          <input id="new-group-desc" class="field" style="width:100%" placeholder="Optional description" />
+        </label>
+        <label style="display:block;margin-bottom:20px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px">Shopify Tag (for tag-based pricing)</div>
+          <input id="new-group-tag" class="field" style="width:100%" placeholder="e.g. wholesale" />
+          <div style="font-size:12px;color:#94a3b8;margin-top:4px">Customers with this Shopify tag will automatically get this group's pricing.</div>
+        </label>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="submitCreateGroup()">Create Group</button>
+        </div>
+        <div id="modal-error" style="color:#ef4444;font-size:13px;margin-top:8px;display:none"></div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="search"><i data-lucide="search"></i><input type="text" id="group-search" placeholder="Search customer groups..." oninput="filterGroups(this.value)" /></div>
+      <button class="btn btn-primary" onclick="openModal()"><i data-lucide="plus"></i>Create customer group</button>
+    </div>
+    <div class="card">
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Name</th><th>Shopify Tag</th><th>Customers</th><th>Status</th><th></th></tr></thead>
+        <tbody id="groups-tbody">
+          <tr><td colspan="5" style="text-align:center;padding:32px;color:#94a3b8">Loading…</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+
+      </div>
+    </main>
+  </div>
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script>
+    let allGroups = [];
+
+    function renderGroups(groups) {
+      const tbody = document.getElementById('groups-tbody');
+      if (!groups.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:#94a3b8">No customer groups yet. Create one to get started.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = groups.map(g => `
+        <tr>
+          <td>
+            <strong>${escHtml(g.name)}</strong>
+            ${g.description ? `<div class="muted">${escHtml(g.description)}</div>` : ''}
+          </td>
+          <td>${g.shopifyTag ? `<span class="badge badge-cyan">${escHtml(g.shopifyTag)}</span>` : '<span style="color:#94a3b8">—</span>'}</td>
+          <td>${g._count?.members ?? 0}</td>
+          <td>${g.isActive ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-warning">Inactive</span>'}</td>
+          <td>
+            <button class="btn" onclick="deleteGroup('${g.id}', '${escHtml(g.name).replace(/'/g,"\\'")}')">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function filterGroups(q) {
+      const lc = q.toLowerCase();
+      renderGroups(q ? allGroups.filter(g => g.name.toLowerCase().includes(lc) || (g.shopifyTag || '').toLowerCase().includes(lc)) : allGroups);
+    }
+
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    async function loadGroups() {
+      try {
+        const data = await TL.loadCustomerGroups();
+        allGroups = data.customerGroups || [];
+        renderGroups(allGroups);
+      } catch (e) {
+        document.getElementById('groups-tbody').innerHTML = `<tr><td colspan="5" style="text-align:center;padding:32px;color:#ef4444">Failed to load: ${e.message}</td></tr>`;
+      }
+    }
+
+    function openModal() {
+      const m = document.getElementById('create-modal');
+      m.style.display = 'flex';
+      document.getElementById('new-group-name').value = '';
+      document.getElementById('new-group-desc').value = '';
+      document.getElementById('new-group-tag').value = '';
+      document.getElementById('modal-error').style.display = 'none';
+    }
+
+    function closeModal() {
+      document.getElementById('create-modal').style.display = 'none';
+    }
+
+    async function submitCreateGroup() {
+      const name = document.getElementById('new-group-name').value.trim();
+      const description = document.getElementById('new-group-desc').value.trim();
+      const shopifyTag = document.getElementById('new-group-tag').value.trim();
+      const errEl = document.getElementById('modal-error');
+      if (!name) { errEl.textContent = 'Name is required.'; errEl.style.display = 'block'; return; }
+      try {
+        await TL.createCustomerGroup({ name, description: description || undefined, shopifyTag: shopifyTag || undefined });
+        closeModal();
+        loadGroups();
+      } catch (e) {
+        errEl.textContent = 'Error: ' + e.message;
+        errEl.style.display = 'block';
+      }
+    }
+
+    async function deleteGroup(id, name) {
+      if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+      try {
+        await TL.deleteCustomerGroup(id);
+        loadGroups();
+      } catch (e) {
+        alert('Failed to delete: ' + e.message);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadGroups();
+    });
+  </script>
+</body>
+</html>

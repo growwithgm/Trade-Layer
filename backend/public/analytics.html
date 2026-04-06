@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analytics - TradeLayer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body class="app-shell">
+  <div class="topbar">Logged in via Shopify. If you need to modify teams or account details, please <a href="#" style="text-decoration:underline;font-weight:700">logout</a> and sign in with your TradeLayer account. <a href="#" style="text-decoration:underline">Learn more</a></div>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="store-switcher">
+          <div class="logo-badge">TL</div>
+          <div class="store-name">ibban.com</div>
+          <i data-lucide="chevron-down" class="chev"></i>
+        </div>
+      </div>
+      <nav id="sidebar-nav" class="sidebar-nav"></nav>
+      <div class="sidebar-foot">
+        <div class="foot-link"><i data-lucide="zap" class="w-4 h-4"></i><span>Popular addons</span></div>
+        <div class="foot-link"><i data-lucide="log-out" class="w-4 h-4"></i><span>Sign out</span></div>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="page">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Analytics</h1>
+            <p class="page-subtitle">See B2B revenue, buyer concentration, rep performance, quote conversion, and customer health in one place.</p>
+          </div>
+        </div>
+        
+    <div class="grid grid-4" style="margin-bottom:20px">
+      <div class="card"><div class="card-body kpi-card"><div class="label">B2B revenue</div><div class="value">€421k</div><div class="meta">Last 90 days</div></div></div>
+      <div class="card"><div class="card-body kpi-card"><div class="label">Reorder rate</div><div class="value">48%</div><div class="meta">Strong repeat pattern</div></div></div>
+      <div class="card"><div class="card-body kpi-card"><div class="label">Top rep</div><div class="value">Marta</div><div class="meta">€41.2k influenced</div></div></div>
+      <div class="card"><div class="card-body kpi-card"><div class="label">Quote win rate</div><div class="value">62%</div><div class="meta">Healthy pipeline</div></div></div>
+    </div>
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-header"><h2 class="card-title">Revenue trend</h2></div>
+        <div class="card-body"><div class="chart-wrap"><canvas data-chart="sales"></canvas></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2 class="card-title">Top customer segments</h2></div>
+        <div class="card-body list">
+          <div class="list-item"><div><strong>Wholesale Europe</strong><div class="muted">€188k revenue</div></div><span class="badge badge-success">44.7%</span></div>
+          <div class="list-item"><div><strong>VIP Salons</strong><div class="muted">€96k revenue</div></div><span class="badge badge-brand">22.8%</span></div>
+          <div class="list-item"><div><strong>Distributors</strong><div class="muted">€74k revenue</div></div><span class="badge badge-brand">17.5%</span></div>
+          <div class="list-item"><div><strong>Prospects</strong><div class="muted">€18k quote value</div></div><span class="badge badge-warning">Pipeline</span></div>
+        </div>
+      </div>
+    </div>
+    
+      </div>
+    </main>
+  </div>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

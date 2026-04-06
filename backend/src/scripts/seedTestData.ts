@@ -22,8 +22,8 @@ dotenv.config({ path: resolve(__dirname, '../../.env') });
 const prisma = new PrismaClient();
 
 // ── Configure these before running ──────────────────────────────────────────
-const SHOP_DOMAIN = 'your-store.myshopify.com';       // replace with real store domain
-const TEST_PRODUCT_ID = 'gid://shopify/Product/123';  // replace with a real product GID
+const SHOP_DOMAIN = 'gmtestme.myshopify.com';       // replace with real store domain
+const TEST_PRODUCT_ID = 'gid://shopify/Product/8894191829218';  // replace with a real product GID
 // ────────────────────────────────────────────────────────────────────────────
 
 async function main() {

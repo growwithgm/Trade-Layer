@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quotes - TradeLayer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body class="app-shell">
+  <div class="topbar">Logged in via Shopify. If you need to modify teams or account details, please <a href="#" style="text-decoration:underline;font-weight:700">logout</a> and sign in with your TradeLayer account. <a href="#" style="text-decoration:underline">Learn more</a></div>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="store-switcher">
+          <div class="logo-badge">TL</div>
+          <div class="store-name">ibban.com</div>
+          <i data-lucide="chevron-down" class="chev"></i>
+        </div>
+      </div>
+      <nav id="sidebar-nav" class="sidebar-nav"></nav>
+      <div class="sidebar-foot">
+        <div class="foot-link"><i data-lucide="zap" class="w-4 h-4"></i><span>Popular addons</span></div>
+        <div class="foot-link"><i data-lucide="log-out" class="w-4 h-4"></i><span>Sign out</span></div>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="page">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Quotes</h1>
+            <p class="page-subtitle">Request-for-quote and quote-to-order workflow with approvals, status tracking, and rep ownership.</p>
+          </div>
+        </div>
+        
+    <div class="grid grid-3" style="margin-bottom:20px">
+      <div class="card"><div class="card-body kpi-card"><div class="label">Total quotes</div><div class="value">184</div><div class="meta">34 this week</div></div></div>
+      <div class="card"><div class="card-body kpi-card"><div class="label">Pending quotes</div><div class="value">21</div><div class="meta">7 need approval</div></div></div>
+      <div class="card"><div class="card-body kpi-card"><div class="label">Conversion rate</div><div class="value">62%</div><div class="meta">Quote to order</div></div></div>
+    </div>
+    <div class="hero-metrics">
+      <div class="card">
+        <div class="card-header"><h2 class="card-title">Quote list</h2><button class="btn btn-primary"><i data-lucide="plus"></i>Create quote</button></div>
+        <div class="table-wrap"><table class="table">
+          <thead><tr><th>Quote #</th><th>Company</th><th>Owner</th><th>Value</th><th>Status</th><th>Updated</th></tr></thead>
+          <tbody>
+            <tr><td>QT-2401</td><td>Salon Pro Group</td><td>Andre Costa</td><td>€2,910</td><td><span class="badge badge-success">Approved</span></td><td>2h ago</td></tr>
+            <tr><td>QT-2402</td><td>IBBAN Europe</td><td>Marta Ruiz</td><td>€5,660</td><td><span class="badge badge-warning">Pending</span></td><td>18m ago</td></tr>
+            <tr><td>QT-2403</td><td>Lisbon Retail Co.</td><td>Carlos Diaz</td><td>€1,320</td><td><span class="badge badge-brand">Draft</span></td><td>5m ago</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2 class="card-title">Quote activity</h2></div>
+        <div class="card-body"><div class="small-chart"><canvas data-chart="quotes"></canvas></div></div>
+      </div>
+    </div>
+    
+      </div>
+    </main>
+  </div>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

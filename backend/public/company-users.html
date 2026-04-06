@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Company Users - TradeLayer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body class="app-shell">
+  <div class="topbar">Logged in via Shopify. If you need to modify teams or account details, please <a href="#" style="text-decoration:underline;font-weight:700">logout</a> and sign in with your TradeLayer account. <a href="#" style="text-decoration:underline">Learn more</a></div>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="store-switcher">
+          <div class="logo-badge">TL</div>
+          <div class="store-name">ibban.com</div>
+          <i data-lucide="chevron-down" class="chev"></i>
+        </div>
+      </div>
+      <nav id="sidebar-nav" class="sidebar-nav"></nav>
+      <div class="sidebar-foot">
+        <div class="foot-link"><i data-lucide="zap" class="w-4 h-4"></i><span>Popular addons</span></div>
+        <div class="foot-link"><i data-lucide="log-out" class="w-4 h-4"></i><span>Sign out</span></div>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="page">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Company Users</h1>
+            <p class="page-subtitle">Assign buyer, manager, finance, and approver roles with granular permissions and spend controls.</p>
+          </div>
+        </div>
+        
+    <div class="grid grid-3" style="margin-bottom:20px">
+      <div class="card"><div class="card-body kpi-card"><div class="label">Active company users</div><div class="value">186</div><div class="meta">Across 84 companies</div></div></div>
+      <div class="card"><div class="card-body kpi-card"><div class="label">Approvers</div><div class="value">32</div><div class="meta">Can approve quotes and orders</div></div></div>
+      <div class="card"><div class="card-body kpi-card"><div class="label">Budget limited users</div><div class="value">48</div><div class="meta">Spend caps enabled</div></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2 class="card-title">User directory</h2><button class="btn btn-primary"><i data-lucide="user-plus"></i>Invite user</button></div>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>User</th><th>Company</th><th>Role</th><th>Spend limit</th><th>Approval power</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Laura Mendez</strong><div class="muted">laura@ibban.eu</div></td><td>IBBAN Europe</td><td>Buyer</td><td>€5,000</td><td>No</td><td><span class="badge badge-success">Active</span></td></tr>
+          <tr><td><strong>Omar Silva</strong><div class="muted">omar@salonpro.pt</div></td><td>Salon Pro Group</td><td>Manager</td><td>€20,000</td><td>Orders only</td><td><span class="badge badge-success">Active</span></td></tr>
+          <tr><td><strong>Nadia Khan</strong><div class="muted">nadia@prospectretail.com</div></td><td>Prospect Retail Collective</td><td>Finance</td><td>-</td><td>Quotes and invoices</td><td><span class="badge badge-warning">Invited</span></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    
+      </div>
+    </main>
+  </div>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

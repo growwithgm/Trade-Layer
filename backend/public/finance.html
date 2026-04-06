@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finance - TradeLayer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body class="app-shell">
+  <div class="topbar">Logged in via Shopify. If you need to modify teams or account details, please <a href="#" style="text-decoration:underline;font-weight:700">logout</a> and sign in with your TradeLayer account. <a href="#" style="text-decoration:underline">Learn more</a></div>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="store-switcher">
+          <div class="logo-badge">TL</div>
+          <div class="store-name">ibban.com</div>
+          <i data-lucide="chevron-down" class="chev"></i>
+        </div>
+      </div>
+      <nav id="sidebar-nav" class="sidebar-nav"></nav>
+      <div class="sidebar-foot">
+        <div class="foot-link"><i data-lucide="zap" class="w-4 h-4"></i><span>Popular addons</span></div>
+        <div class="foot-link"><i data-lucide="log-out" class="w-4 h-4"></i><span>Sign out</span></div>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="page">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Finance</h1>
+            <p class="page-subtitle">Track invoices, credit limits, net terms, payment exposure, and account health for wholesale customers.</p>
+          </div>
+        </div>
+        
+    <div class="grid grid-4" style="margin-bottom:20px">
+      <div class="card"><div class="card-body kpi-card"><div class="label">Outstanding invoices</div><div class="value">€48,900</div><div class="meta">12 open documents</div></div></div>
+      <div class="card"><div class="card-body kpi-card"><div class="label">Credit used</div><div class="value">€71,400</div><div class="meta">Across 18 accounts</div></div></div>
+      <div class="card"><div class="card-body kpi-card"><div class="label">Overdue amount</div><div class="value">€9,860</div><div class="meta">4 companies flagged</div></div></div>
+      <div class="card"><div class="card-body kpi-card"><div class="label">Net terms customers</div><div class="value">39</div><div class="meta">Net 15, 30, and 60</div></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2 class="card-title">Invoice and credit overview</h2></div>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Company</th><th>Invoice</th><th>Due date</th><th>Terms</th><th>Open balance</th><th>Credit limit</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>IBBAN Europe</td><td>INV-8821</td><td>2026-04-16</td><td>Net 30</td><td>€12,400</td><td>€50,000</td><td><span class="badge badge-success">On track</span></td></tr>
+          <tr><td>Salon Pro Group</td><td>INV-8814</td><td>2026-04-06</td><td>Net 15</td><td>€4,880</td><td>€20,000</td><td><span class="badge badge-warning">Due soon</span></td></tr>
+          <tr><td>Lisbon Retail Co.</td><td>INV-8771</td><td>2026-03-28</td><td>Net 15</td><td>€2,580</td><td>€10,000</td><td><span class="badge badge-danger">Overdue</span></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    
+      </div>
+    </main>
+  </div>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

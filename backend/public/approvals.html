@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Approvals - TradeLayer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body class="app-shell">
+  <div class="topbar">Logged in via Shopify. If you need to modify teams or account details, please <a href="#" style="text-decoration:underline;font-weight:700">logout</a> and sign in with your TradeLayer account. <a href="#" style="text-decoration:underline">Learn more</a></div>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="store-switcher">
+          <div class="logo-badge">TL</div>
+          <div class="store-name">ibban.com</div>
+          <i data-lucide="chevron-down" class="chev"></i>
+        </div>
+      </div>
+      <nav id="sidebar-nav" class="sidebar-nav"></nav>
+      <div class="sidebar-foot">
+        <div class="foot-link"><i data-lucide="zap" class="w-4 h-4"></i><span>Popular addons</span></div>
+        <div class="foot-link"><i data-lucide="log-out" class="w-4 h-4"></i><span>Sign out</span></div>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="page">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Approvals</h1>
+            <p class="page-subtitle">Centralized queue for orders, quotes, account requests, and discount exceptions waiting for manager approval.</p>
+          </div>
+        </div>
+        
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-header"><h2 class="card-title">Approval queue</h2></div>
+        <div class="table-wrap"><table class="table" style="min-width:100%">
+          <thead><tr><th>Request</th><th>Type</th><th>Company</th><th>Reason</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>#APP-4401</td><td>Order</td><td>IBBAN Europe</td><td>Above department budget cap</td><td><span class="badge badge-warning">Pending</span></td></tr>
+            <tr><td>#APP-4402</td><td>Quote</td><td>Salon Pro Group</td><td>12% discount requested</td><td><span class="badge badge-warning">Pending</span></td></tr>
+            <tr><td>#APP-4403</td><td>Account</td><td>Prospect Retail Collective</td><td>New B2B login request</td><td><span class="badge badge-warning">Pending</span></td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2 class="card-title">Approval split</h2></div>
+        <div class="card-body">
+          <div class="small-chart"><canvas data-chart="donut"></canvas></div>
+          <div class="footer-note">Use this page later for threaded comments, approval history, and exception routing.</div>
+        </div>
+      </div>
+    </div>
+    
+      </div>
+    </main>
+  </div>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

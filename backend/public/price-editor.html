@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Price Editor - TradeLayer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body class="app-shell">
+  <div class="topbar">Logged in via Shopify. If you need to modify teams or account details, please <a href="#" style="text-decoration:underline;font-weight:700">logout</a> and sign in with your TradeLayer account. <a href="#" style="text-decoration:underline">Learn more</a></div>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="store-switcher">
+          <div class="logo-badge">TL</div>
+          <div class="store-name" id="store-name">My Store</div>
+          <i data-lucide="chevron-down" class="chev"></i>
+        </div>
+      </div>
+      <nav id="sidebar-nav" class="sidebar-nav"></nav>
+      <div class="sidebar-foot">
+        <div class="foot-link"><i data-lucide="zap" class="w-4 h-4"></i><span>Popular addons</span></div>
+        <div class="foot-link"><i data-lucide="log-out" class="w-4 h-4"></i><span>Sign out</span></div>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="page">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Price Editor</h1>
+            <p class="page-subtitle">Set B2B prices for customer groups across your product catalog.</p>
+          </div>
+        </div>
+
+    <div class="toolbar" style="margin-bottom:16px">
+      <div class="inline" style="gap:10px;flex-wrap:wrap">
+        <div class="search"><i data-lucide="search"></i><input type="text" id="product-search" placeholder="Search products…" oninput="debounceSearch(this.value)" /></div>
+        <select id="group-select" class="field" style="height:40px;min-width:200px" onchange="onGroupChange()">
+          <option value="">All customers (no group)</option>
+        </select>
+        <select id="rule-type-select" class="field" style="height:40px">
+          <option value="fixed_price">Fixed Price</option>
+          <option value="percentage_discount">% Discount</option>
+        </select>
+      </div>
+      <div class="inline" style="gap:10px">
+        <button class="btn" onclick="discardChanges()">Discard</button>
+        <button class="btn btn-primary" onclick="saveChanges()" id="save-btn">Save changes</button>
+      </div>
+    </div>
+
+    <div id="save-status" style="display:none;padding:8px 12px;border-radius:6px;font-size:13px;margin-bottom:12px"></div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>SKU</th>
+              <th>Shopify Price</th>
+              <th>B2B Price / Discount</th>
+            </tr>
+          </thead>
+          <tbody id="products-tbody">
+            <tr><td colspan="4" style="text-align:center;padding:32px;color:#94a3b8">Loading products…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+      </div>
+    </main>
+  </div>
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script>
+    let products = [];
+    let customerGroups = [];
+    // Map of productGid -> { value, ruleType, ruleId, dirty }
+    let priceEdits = {};
+    // Map of productGid -> existing PricingRule from DB
+    let existingRules = {};
+    let searchTimer = null;
+
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function getSelectedGroup() {
+      return document.getElementById('group-select').value || null;
+    }
+
+    function getRuleType() {
+      return document.getElementById('rule-type-select').value;
+    }
+
+    async function init() {
+      // Load groups for the filter dropdown
+      try {
+        const data = await TL.loadCustomerGroups();
+        customerGroups = data.customerGroups || [];
+        const sel = document.getElementById('group-select');
+        customerGroups.forEach(g => {
+          const opt = document.createElement('option');
+          opt.value = g.id;
+          opt.textContent = g.name;
+          sel.appendChild(opt);
+        });
+      } catch (e) {
+        console.warn('Could not load customer groups:', e.message);
+      }
+
+      await loadProducts('');
+    }
+
+    async function loadProducts(query) {
+      const tbody = document.getElementById('products-tbody');
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:32px;color:#94a3b8">Loading…</td></tr>';
+      try {
+        const endpoint = query ? `/api/products/search?query=${encodeURIComponent(query)}` : '/api/products';
+        const data = await TL.fetch(endpoint);
+        products = data.products || [];
+
+        // Load existing pricing rules for the selected group
+        await refreshRules();
+        renderTable();
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:32px;color:#ef4444">Failed to load products: ${e.message}</td></tr>`;
+      }
+    }
+
+    async function refreshRules() {
+      try {
+        const data = await TL.loadPricingRules();
+        const rules = data.pricingRules || [];
+        const groupId = getSelectedGroup();
+        existingRules = {};
+        rules.forEach(r => {
+          // Match rules for this group (or store-wide if no group selected)
+          const matchesGroup = groupId ? r.customerGroupId === groupId : !r.customerGroupId;
+          if (matchesGroup && r.shopifyProductId) {
+            // Prefer variant rules, then product rules
+            const productNumeric = r.shopifyProductId.replace(/.*\//, '');
+            existingRules[productNumeric] = r;
+          }
+        });
+      } catch (e) {
+        console.warn('Could not load pricing rules:', e.message);
+      }
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('products-tbody');
+      if (!products.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:32px;color:#94a3b8">No products found.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = products.map(p => {
+        const pId = String(p.id);
+        const existing = existingRules[pId];
+        const edit = priceEdits[pId];
+        const currentValue = edit?.value ?? (existing ? Number(existing.value) : '');
+        const currentType = edit?.ruleType ?? (existing ? existing.ruleType : getRuleType());
+        const isDirty = !!edit?.dirty;
+
+        // First variant for display
+        const firstVariant = p.variants?.[0] ?? {};
+        const shopifyPrice = firstVariant.price ? `€${Number(firstVariant.price).toFixed(2)}` : '—';
+        const sku = firstVariant.sku || '—';
+
+        const inputStyle = `width:130px;height:36px${isDirty ? ';border-color:#5c59f2' : ''}`;
+        const prefix = currentType === 'percentage_discount' ? '%' : '€';
+
+        return `
+          <tr id="row-${pId}" ${isDirty ? 'style="background:#f8f7ff"' : ''}>
+            <td><strong>${escHtml(p.title)}</strong>${existing ? '<span class="badge badge-success" style="margin-left:8px;font-size:10px">Priced</span>' : ''}</td>
+            <td>${escHtml(sku)}</td>
+            <td>${shopifyPrice}</td>
+            <td style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:13px;color:#64748b">${prefix}</span>
+              <input class="field" style="${inputStyle}"
+                type="number" step="0.01" min="0"
+                value="${currentValue}"
+                placeholder="${currentType === 'percentage_discount' ? '0–100' : '0.00'}"
+                onchange="markDirty('${pId}', this.value)"
+                oninput="markDirty('${pId}', this.value)"
+              />
+              ${existing ? `<button class="btn" style="font-size:11px;padding:4px 8px" onclick="clearRule('${pId}', '${existing.id}')">Clear</button>` : ''}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function markDirty(productId, value) {
+      const ruleType = getRuleType();
+      priceEdits[productId] = { value: parseFloat(value) || 0, ruleType, dirty: true };
+      const row = document.getElementById('row-' + productId);
+      if (row) row.style.background = '#f8f7ff';
+    }
+
+    function discardChanges() {
+      priceEdits = {};
+      renderTable();
+    }
+
+    async function saveChanges() {
+      const dirtyIds = Object.keys(priceEdits).filter(id => priceEdits[id].dirty);
+      if (!dirtyIds.length) { showStatus('No changes to save.', 'info'); return; }
+
+      const btn = document.getElementById('save-btn');
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+
+      const groupId = getSelectedGroup();
+      let saved = 0, failed = 0;
+
+      for (const productId of dirtyIds) {
+        const edit = priceEdits[productId];
+        const product = products.find(p => String(p.id) === productId);
+        if (!product) continue;
+
+        try {
+          await TL.fetch('/api/pricing-rules/quick-update', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              shopifyProductId: product.gid || `gid://shopify/Product/${productId}`,
+              customerGroupId: groupId || null,
+              ruleType: edit.ruleType,
+              value: edit.value,
+            }),
+          });
+          priceEdits[productId].dirty = false;
+          saved++;
+        } catch (e) {
+          console.error('Save failed for product', productId, e);
+          failed++;
+        }
+      }
+
+      await refreshRules();
+      renderTable();
+      btn.disabled = false;
+      btn.textContent = 'Save changes';
+
+      if (failed) {
+        showStatus(`Saved ${saved}, failed ${failed}. Check console.`, 'error');
+      } else {
+        showStatus(`${saved} rule${saved !== 1 ? 's' : ''} saved successfully.`, 'success');
+      }
+    }
+
+    async function clearRule(productId, ruleId) {
+      if (!confirm('Remove this pricing rule?')) return;
+      try {
+        await TL.deletePricingRule(ruleId);
+        delete priceEdits[productId];
+        await refreshRules();
+        renderTable();
+        showStatus('Rule removed.', 'success');
+      } catch (e) {
+        alert('Failed: ' + e.message);
+      }
+    }
+
+    function showStatus(msg, type) {
+      const el = document.getElementById('save-status');
+      const colors = { success: '#10b981', error: '#ef4444', info: '#64748b' };
+      el.style.background = type === 'success' ? '#ecfdf5' : type === 'error' ? '#fef2f2' : '#f8fafc';
+      el.style.color = colors[type] || '#333';
+      el.style.border = `1px solid ${colors[type]}33`;
+      el.textContent = msg;
+      el.style.display = 'block';
+      setTimeout(() => { el.style.display = 'none'; }, 4000);
+    }
+
+    function debounceSearch(q) {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => loadProducts(q), 400);
+    }
+
+    function onGroupChange() {
+      priceEdits = {};
+      refreshRules().then(() => renderTable());
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

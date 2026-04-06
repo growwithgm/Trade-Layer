@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard - TradeLayer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body class="app-shell">
+  <div class="topbar">Logged in via Shopify. If you need to modify teams or account details, please <a href="#" style="text-decoration:underline;font-weight:700">logout</a> and sign in with your TradeLayer account. <a href="#" style="text-decoration:underline">Learn more</a></div>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="store-switcher">
+          <div class="logo-badge">TL</div>
+          <div class="store-name">ibban.com</div>
+          <i data-lucide="chevron-down" class="chev"></i>
+        </div>
+      </div>
+      <nav id="sidebar-nav" class="sidebar-nav"></nav>
+      <div class="sidebar-foot">
+        <div class="foot-link"><i data-lucide="zap" class="w-4 h-4"></i><span>Popular addons</span></div>
+        <div class="foot-link"><i data-lucide="log-out" class="w-4 h-4"></i><span>Sign out</span></div>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="page">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Dashboard</h1>
+            <p class="page-subtitle">Same TradeLayer theme expanded into a complete B2B operating system view with pricing, ordering, approvals, finance, and analytics.</p>
+          </div>
+        </div>
+        
+    <div class="banner" style="margin-bottom:20px">
+      <div class="icon-wrap"><i data-lucide="check" class="w-5 h-5"></i></div>
+      <div>
+        <div style="font-weight:800;font-size:15px">You're all set up with TradeLayer</div>
+        <div style="font-size:12px;opacity:.92">Pricing, customer groups, theme extension, and integrations are connected for your B2B storefront.</div>
+      </div>
+    </div>
+
+    <div class="grid grid-4" style="margin-bottom:20px">
+      <div class="card"><div class="card-body kpi-card"><div class="label">Total B2B Sales</div><div class="value">€128,420</div><div class="meta">+14.8% vs last month</div></div></div>
+      <div class="card"><div class="card-body kpi-card"><div class="label">Total Orders</div><div class="value">1,284</div><div class="meta">92 approved this week</div></div></div>
+      <div class="card"><div class="card-body kpi-card"><div class="label">Average Order Value</div><div class="value">€356</div><div class="meta">MOQ rules increasing basket size</div></div></div>
+      <div class="card"><div class="card-body kpi-card"><div class="label">Active Companies</div><div class="value">84</div><div class="meta">11 new buyers added</div></div></div>
+    </div>
+
+    <div class="hero-metrics" style="margin-bottom:20px">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Sales performance</h2>
+          <div class="tabs">
+            <div class="tab active">Revenue</div>
+            <div class="tab">Orders</div>
+            <div class="tab">Customers</div>
+            <div class="tab">Quotes</div>
+          </div>
+        </div>
+        <div class="card-body"><div class="chart-wrap"><canvas data-chart="sales"></canvas></div></div>
+      </div>
+      <div class="section-stack">
+        <div class="card">
+          <div class="card-header"><h2 class="card-title">Quick actions</h2></div>
+          <div class="card-body stat-list">
+            <a class="btn btn-primary" href="price-lists.html"><i data-lucide="plus"></i>Create price list</a>
+            <a class="btn" href="customer-groups.html"><i data-lucide="users"></i>Add customer group</a>
+            <a class="btn" href="price-editor.html"><i data-lucide="pencil"></i>Open price editor</a>
+            <a class="btn" href="discounts.html"><i data-lucide="badge-percent"></i>Create discount</a>
+            <a class="btn" href="sales-agents.html"><i data-lucide="user-plus"></i>Add sales agent</a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h2 class="card-title">Setup progress</h2></div>
+          <div class="card-body stat-list">
+            <div><div class="stat-row"><span>Pricing configured</span><strong>100%</strong></div><div class="progress"><span style="width:100%"></span></div></div>
+            <div><div class="stat-row"><span>Customer groups created</span><strong>80%</strong></div><div class="progress"><span style="width:80%"></span></div></div>
+            <div><div class="stat-row"><span>Theme enabled</span><strong>100%</strong></div><div class="progress"><span style="width:100%"></span></div></div>
+            <div><div class="stat-row"><span>Integration connected</span><strong>66%</strong></div><div class="progress"><span style="width:66%"></span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-3">
+      <div class="card">
+        <div class="card-header"><h2 class="card-title">Recent activity</h2></div>
+        <div class="card-body list">
+          <div class="list-item"><div class="inline"><div class="avatar">PL</div><div><strong>Price list updated</strong><div class="muted">IBBAN EUROPE S.L. for 214 variants</div></div></div><span class="subtle">2m ago</span></div>
+          <div class="list-item"><div class="inline"><div class="avatar">Q</div><div><strong>Quote approved</strong><div class="muted">Quote QT-2401 converted to order</div></div></div><span class="subtle">11m ago</span></div>
+          <div class="list-item"><div class="inline"><div class="avatar">CG</div><div><strong>Customer group synced</strong><div class="muted">Wholesale Buyers now has 124 customers</div></div></div><span class="subtle">39m ago</span></div>
+          <div class="list-item"><div class="inline"><div class="avatar">SA</div><div><strong>Sales agent order</strong><div class="muted">Marta created order for Iberia Retail</div></div></div><span class="subtle">1h ago</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2 class="card-title">Attention needed</h2></div>
+        <div class="card-body list">
+          <div class="list-item"><div><strong>12 products missing TradeLayer prices</strong><div class="muted">These will fallback to Shopify base price</div></div><span class="badge badge-warning">Review</span></div>
+          <div class="list-item"><div><strong>7 customers without price list</strong><div class="muted">Assign price list before next order cycle</div></div><span class="badge badge-warning">Pending</span></div>
+          <div class="list-item"><div><strong>3 orders blocked by MOQ rules</strong><div class="muted">Customers attempted below pack size threshold</div></div><span class="badge badge-danger">Blocked</span></div>
+          <div class="list-item"><div><strong>ERP integration not configured</strong><div class="muted">Odoo sync still in sandbox mode</div></div><span class="badge badge-brand">Setup</span></div>
+        </div>
+      </div>
+
+      <div class="section-stack">
+        <div class="card">
+          <div class="card-header"><h2 class="card-title">Pending approvals</h2></div>
+          <div class="card-body">
+            <div class="info-grid" style="grid-template-columns:1fr">
+              <div class="info-box"><div class="label">Order approvals</div><div class="value">19</div></div>
+              <div class="info-box"><div class="label">Quote approvals</div><div class="value">7</div></div>
+              <div class="info-box"><div class="label">Account requests</div><div class="value">4</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h2 class="card-title">Top buyers</h2></div>
+          <div class="card-body list">
+            <div class="list-item"><div><strong>IBBAN Europe</strong><div class="muted">€28,240 this month</div></div><span class="badge badge-success">+18%</span></div>
+            <div class="list-item"><div><strong>Madrid Wholesale Hub</strong><div class="muted">€21,880 this month</div></div><span class="badge badge-success">+9%</span></div>
+            <div class="list-item"><div><strong>Salon Pro Group</strong><div class="muted">€17,420 this month</div></div><span class="badge badge-brand">Stable</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+      </div>
+    </main>
+  </div>
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const [groupsData, rulesData] = await Promise.all([
+          TL.loadCustomerGroups(),
+          TL.loadPricingRules(),
+        ]);
+        const groups = groupsData.customerGroups || [];
+        const rules = rulesData.pricingRules || [];
+        // Update KPI cards with real counts
+        const kpis = document.querySelectorAll('.kpi-card .value');
+        if (kpis[3]) kpis[3].textContent = groups.filter(g => g.isActive).length;
+        // Patch customer groups card if present
+        const stat = document.getElementById('stat-groups');
+        if (stat) stat.textContent = groups.length;
+      } catch (e) {
+        // Dashboard stats gracefully degrade if fetch fails
+      }
+    });
+  </script>
+</body>
+</html>

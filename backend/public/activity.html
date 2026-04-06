@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Activity - TradeLayer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body class="app-shell">
+  <div class="topbar">Logged in via Shopify. If you need to modify teams or account details, please <a href="#" style="text-decoration:underline;font-weight:700">logout</a> and sign in with your TradeLayer account. <a href="#" style="text-decoration:underline">Learn more</a></div>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="store-switcher">
+          <div class="logo-badge">TL</div>
+          <div class="store-name">ibban.com</div>
+          <i data-lucide="chevron-down" class="chev"></i>
+        </div>
+      </div>
+      <nav id="sidebar-nav" class="sidebar-nav"></nav>
+      <div class="sidebar-foot">
+        <div class="foot-link"><i data-lucide="zap" class="w-4 h-4"></i><span>Popular addons</span></div>
+        <div class="foot-link"><i data-lucide="log-out" class="w-4 h-4"></i><span>Sign out</span></div>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="page">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Activity</h1>
+            <p class="page-subtitle">Track all sales activity, sales agent orders, quote conversions, and account events across the store.</p>
+          </div>
+        </div>
+        
+    <div class="toolbar">
+      <div class="inline" style="gap:10px;flex-wrap:wrap">
+        <div class="search"><i data-lucide="search"></i><input type="text" placeholder="Search activity, order number, company..." /></div>
+        <select class="select" style="width:180px"><option>Last 30 days</option></select>
+        <select class="select" style="width:180px"><option>All activity types</option></select>
+      </div>
+      <button class="btn"><i data-lucide="download"></i>Export log</button>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2 class="card-title">Sales history</h2></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Date</th><th>Reference</th><th>Type</th><th>Company</th><th>User</th><th>Status</th><th>Amount</th></tr></thead>
+          <tbody>
+            <tr><td>2026-04-05 09:12</td><td>#ORD-10293</td><td>Order</td><td>IBBAN Europe</td><td>Marta Ruiz</td><td><span class="badge badge-success">Paid</span></td><td>€4,880</td></tr>
+            <tr><td>2026-04-05 08:50</td><td>#QT-2401</td><td>Quote</td><td>Salon Pro Group</td><td>Andre Costa</td><td><span class="badge badge-brand">Approved</span></td><td>€2,910</td></tr>
+            <tr><td>2026-04-04 18:33</td><td>#ACC-811</td><td>Account request</td><td>Lisbon Retail Co.</td><td>Nadia Khan</td><td><span class="badge badge-warning">Pending</span></td><td>-</td></tr>
+            <tr><td>2026-04-04 14:18</td><td>#PR-480</td><td>Price update</td><td>All customers</td><td>Admin</td><td><span class="badge badge-success">Applied</span></td><td>-</td></tr>
+            <tr><td>2026-04-04 11:09</td><td>#ORD-10267</td><td>Sales agent order</td><td>Madrid Wholesale Hub</td><td>Carlos Diaz</td><td><span class="badge badge-success">Processing</span></td><td>€5,240</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+      </div>
+    </main>
+  </div>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings - TradeLayer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body class="app-shell">
+  <div class="topbar">Logged in via Shopify. If you need to modify teams or account details, please <a href="#" style="text-decoration:underline;font-weight:700">logout</a> and sign in with your TradeLayer account. <a href="#" style="text-decoration:underline">Learn more</a></div>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="store-switcher">
+          <div class="logo-badge">TL</div>
+          <div class="store-name">ibban.com</div>
+          <i data-lucide="chevron-down" class="chev"></i>
+        </div>
+      </div>
+      <nav id="sidebar-nav" class="sidebar-nav"></nav>
+      <div class="sidebar-foot">
+        <div class="foot-link"><i data-lucide="zap" class="w-4 h-4"></i><span>Popular addons</span></div>
+        <div class="foot-link"><i data-lucide="log-out" class="w-4 h-4"></i><span>Sign out</span></div>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="page">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Settings</h1>
+            <p class="page-subtitle">Global app configuration for branding, theme extension, billing state, defaults, and operational controls.</p>
+          </div>
+        </div>
+        
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-header"><h2 class="card-title">Store defaults</h2></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="form-group"><label>Default currency</label><select class="select"><option>EUR</option></select></div>
+            <div class="form-group"><label>Default quote expiry</label><input class="field" value="14 days" /></div>
+            <div class="form-group"><label>Default MOQ behavior</label><select class="select"><option>Round to nearest pack size</option></select></div>
+            <div class="form-group"><label>Plan</label><input class="field" value="Pro" /></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2 class="card-title">Theme extension</h2></div>
+        <div class="card-body stat-list">
+          <div class="stat-row"><span>Product price replacement</span><span class="badge badge-success">Enabled</span></div>
+          <div class="stat-row"><span>Pack sizing widget</span><span class="badge badge-success">Enabled</span></div>
+          <div class="stat-row"><span>Quick order block</span><span class="badge badge-success">Enabled</span></div>
+          <div class="stat-row"><span>Quote CTA</span><span class="badge badge-warning">Optional</span></div>
+          <div style="margin-top:16px"><button class="btn btn-primary">Save settings</button></div>
+        </div>
+      </div>
+    </div>
+    
+      </div>
+    </main>
+  </div>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

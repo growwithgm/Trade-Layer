@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sales Agents - TradeLayer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body class="app-shell">
+  <div class="topbar">Logged in via Shopify. If you need to modify teams or account details, please <a href="#" style="text-decoration:underline;font-weight:700">logout</a> and sign in with your TradeLayer account. <a href="#" style="text-decoration:underline">Learn more</a></div>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="store-switcher">
+          <div class="logo-badge">TL</div>
+          <div class="store-name">ibban.com</div>
+          <i data-lucide="chevron-down" class="chev"></i>
+        </div>
+      </div>
+      <nav id="sidebar-nav" class="sidebar-nav"></nav>
+      <div class="sidebar-foot">
+        <div class="foot-link"><i data-lucide="zap" class="w-4 h-4"></i><span>Popular addons</span></div>
+        <div class="foot-link"><i data-lucide="log-out" class="w-4 h-4"></i><span>Sign out</span></div>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="page">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Sales Agents</h1>
+            <p class="page-subtitle">Allow internal reps to create orders, submit quotes, and manage assigned accounts with controlled permissions.</p>
+          </div>
+        </div>
+        
+    <div class="grid grid-3" style="margin-bottom:20px">
+      <div class="card"><div class="card-body kpi-card"><div class="label">Active sales agents</div><div class="value">12</div><div class="meta">4 online now</div></div></div>
+      <div class="card"><div class="card-body kpi-card"><div class="label">Orders created this month</div><div class="value">219</div><div class="meta">€88,421 revenue influenced</div></div></div>
+      <div class="card"><div class="card-body kpi-card"><div class="label">Average approval rate</div><div class="value">96%</div><div class="meta">Margin guardrails active</div></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2 class="card-title">Team directory</h2><button class="btn btn-primary"><i data-lucide="user-plus"></i>Add agent</button></div>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Name</th><th>Region</th><th>Assigned companies</th><th>Permissions</th><th>Performance</th><th></th></tr></thead>
+        <tbody>
+          <tr><td><strong>Carlos Diaz</strong><div class="muted">carlos@tradelayer.app</div></td><td>Iberia</td><td>18</td><td>Orders, quotes, discounts under 8%</td><td><span class="badge badge-success">€32.4k / mo</span></td><td><button class="btn">View</button></td></tr>
+          <tr><td><strong>Marta Ruiz</strong><div class="muted">marta@tradelayer.app</div></td><td>Europe</td><td>24</td><td>Orders, approvals, onboarding</td><td><span class="badge badge-success">€41.2k / mo</span></td><td><button class="btn">View</button></td></tr>
+          <tr><td><strong>Andre Costa</strong><div class="muted">andre@tradelayer.app</div></td><td>Portugal</td><td>9</td><td>Quotes only</td><td><span class="badge badge-brand">€12.8k / mo</span></td><td><button class="btn">View</button></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    
+      </div>
+    </main>
+  </div>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

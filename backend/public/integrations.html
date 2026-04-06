@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Integrations - TradeLayer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body class="app-shell">
+  <div class="topbar">Logged in via Shopify. If you need to modify teams or account details, please <a href="#" style="text-decoration:underline;font-weight:700">logout</a> and sign in with your TradeLayer account. <a href="#" style="text-decoration:underline">Learn more</a></div>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="store-switcher">
+          <div class="logo-badge">TL</div>
+          <div class="store-name">ibban.com</div>
+          <i data-lucide="chevron-down" class="chev"></i>
+        </div>
+      </div>
+      <nav id="sidebar-nav" class="sidebar-nav"></nav>
+      <div class="sidebar-foot">
+        <div class="foot-link"><i data-lucide="zap" class="w-4 h-4"></i><span>Popular addons</span></div>
+        <div class="foot-link"><i data-lucide="log-out" class="w-4 h-4"></i><span>Sign out</span></div>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="page">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Integrations</h1>
+            <p class="page-subtitle">Frontend for ERP, EDI, automation, shipping, and Shopify ecosystem connections discussed in the roadmap.</p>
+          </div>
+        </div>
+        
+    <div class="grid grid-3">
+      <div class="card"><div class="card-body"><div class="inline"><div class="avatar">S</div><div><strong>Shopify Admin API</strong><div class="muted">Products, customers, orders synced</div></div></div><div style="margin-top:14px"><span class="badge badge-success">Connected</span></div></div></div>
+      <div class="card"><div class="card-body"><div class="inline"><div class="avatar">O</div><div><strong>Odoo ERP</strong><div class="muted">Inventory and invoice sync</div></div></div><div style="margin-top:14px"><span class="badge badge-warning">Sandbox</span></div></div></div>
+      <div class="card"><div class="card-body"><div class="inline"><div class="avatar">N</div><div><strong>n8n Automations</strong><div class="muted">Webhook and workflow relay</div></div></div><div style="margin-top:14px"><span class="badge badge-brand">Available</span></div></div></div>
+      <div class="card"><div class="card-body"><div class="inline"><div class="avatar">E</div><div><strong>EDI Gateway</strong><div class="muted">Purchase order import/export</div></div></div><div style="margin-top:14px"><span class="badge badge-brand">Planned</span></div></div></div>
+      <div class="card"><div class="card-body"><div class="inline"><div class="avatar">C</div><div><strong>Correos / Shipping</strong><div class="muted">Dispatch and label sync</div></div></div><div style="margin-top:14px"><span class="badge badge-warning">Config needed</span></div></div></div>
+      <div class="card"><div class="card-body"><div class="inline"><div class="avatar">A</div><div><strong>Accounting export</strong><div class="muted">Statements and tax handoff</div></div></div><div style="margin-top:14px"><span class="badge badge-brand">Planned</span></div></div></div>
+    </div>
+    
+      </div>
+    </main>
+  </div>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

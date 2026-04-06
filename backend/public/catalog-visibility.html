@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Catalog Visibility - TradeLayer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body class="app-shell">
+  <div class="topbar">Logged in via Shopify. If you need to modify teams or account details, please <a href="#" style="text-decoration:underline;font-weight:700">logout</a> and sign in with your TradeLayer account. <a href="#" style="text-decoration:underline">Learn more</a></div>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="store-switcher">
+          <div class="logo-badge">TL</div>
+          <div class="store-name">ibban.com</div>
+          <i data-lucide="chevron-down" class="chev"></i>
+        </div>
+      </div>
+      <nav id="sidebar-nav" class="sidebar-nav"></nav>
+      <div class="sidebar-foot">
+        <div class="foot-link"><i data-lucide="zap" class="w-4 h-4"></i><span>Popular addons</span></div>
+        <div class="foot-link"><i data-lucide="log-out" class="w-4 h-4"></i><span>Sign out</span></div>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="page">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Catalog Visibility</h1>
+            <p class="page-subtitle">Control who can see pricing, specific catalogs, add-to-cart, and quote-only product access by group.</p>
+          </div>
+        </div>
+        
+    <div class="card">
+      <div class="card-header"><h2 class="card-title">Visibility rules</h2><button class="btn btn-primary"><i data-lucide="plus"></i>Add rule</button></div>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Rule</th><th>Audience</th><th>Catalog</th><th>Price visibility</th><th>Checkout</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Hide all prices for guests</strong></td><td>Visitors</td><td>Global</td><td>Hidden</td><td>Disabled</td><td><span class="badge badge-success">Enabled</span></td></tr>
+          <tr><td><strong>Private salon catalog</strong></td><td>VIP Salons</td><td>VIP Collection</td><td>Visible</td><td>Enabled</td><td><span class="badge badge-success">Enabled</span></td></tr>
+          <tr><td><strong>Prospect quote-only mode</strong></td><td>Prospects</td><td>Selected SKUs</td><td>Visible</td><td>Quote only</td><td><span class="badge badge-warning">Draft</span></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    
+      </div>
+    </main>
+  </div>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

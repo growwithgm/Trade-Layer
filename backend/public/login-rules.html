@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login Rules - TradeLayer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body class="app-shell">
+  <div class="topbar">Logged in via Shopify. If you need to modify teams or account details, please <a href="#" style="text-decoration:underline;font-weight:700">logout</a> and sign in with your TradeLayer account. <a href="#" style="text-decoration:underline">Learn more</a></div>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="store-switcher">
+          <div class="logo-badge">TL</div>
+          <div class="store-name">ibban.com</div>
+          <i data-lucide="chevron-down" class="chev"></i>
+        </div>
+      </div>
+      <nav id="sidebar-nav" class="sidebar-nav"></nav>
+      <div class="sidebar-foot">
+        <div class="foot-link"><i data-lucide="zap" class="w-4 h-4"></i><span>Popular addons</span></div>
+        <div class="foot-link"><i data-lucide="log-out" class="w-4 h-4"></i><span>Sign out</span></div>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="page">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Login Rules</h1>
+            <p class="page-subtitle">Frontend configuration for login-based price visibility, guest restrictions, and B2B access controls.</p>
+          </div>
+        </div>
+        
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-header"><h2 class="card-title">Access behavior</h2></div>
+        <div class="card-body stat-list">
+          <div class="stat-row"><span>Require login to view pricing</span><span class="badge badge-success">Enabled</span></div>
+          <div class="stat-row"><span>Hide add to cart for guests</span><span class="badge badge-success">Enabled</span></div>
+          <div class="stat-row"><span>Allow quote requests for prospects</span><span class="badge badge-success">Enabled</span></div>
+          <div class="stat-row"><span>Fallback to retail price for mixed customers</span><span class="badge badge-warning">Optional</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2 class="card-title">Frontend messaging</h2></div>
+        <div class="card-body">
+          <div class="form-group"><label>Guest banner</label><textarea class="textarea">Log in to view your wholesale pricing and order packs.</textarea></div>
+          <div class="form-group"><label>Restricted add-to-cart message</label><textarea class="textarea">Your account must be approved before ordering from this catalog.</textarea></div>
+          <div style="margin-top:16px"><button class="btn btn-primary">Save content</button></div>
+        </div>
+      </div>
+    </div>
+    
+      </div>
+    </main>
+  </div>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
