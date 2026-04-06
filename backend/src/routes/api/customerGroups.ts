@@ -33,6 +33,30 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/customer-groups/:id — single group with members
+router.get('/:id', async (req: Request, res: Response) => {
+  try {
+    const shopDomain: string = res.locals.shopify.session.shop;
+    const storeId = await getStoreId(shopDomain);
+    const { id } = req.params;
+
+    const group = await prisma.customerGroup.findFirst({
+      where: { id, storeId },
+      include: {
+        _count: { select: { members: true } },
+        members: { select: { shopifyCustomerId: true, createdAt: true }, orderBy: { createdAt: 'desc' } },
+        pricingRules: { where: { isActive: true }, select: { id: true, ruleType: true, value: true, shopifyProductId: true }, take: 10 },
+      },
+    });
+
+    if (!group) { res.status(404).json({ error: 'Customer group not found' }); return; }
+    res.json({ customerGroup: group });
+  } catch (error) {
+    console.error('GET /customer-groups/:id error:', error);
+    res.status(500).json({ error: 'Failed to fetch customer group' });
+  }
+});
+
 // POST /api/customer-groups
 router.post('/', async (req: Request, res: Response) => {
   try {

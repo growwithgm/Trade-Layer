@@ -6,8 +6,47 @@
   <title>Customer Groups - TradeLayer</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="assets/css/styles.css" />
+  <style>
+    /* ── Inline extras ── */
+    .tl-modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:900;display:flex;align-items:center;justify-content:center}
+    .tl-modal{background:#fff;border-radius:12px;padding:28px;width:520px;max-width:calc(100vw - 32px);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.18)}
+    .tl-modal h2{font-size:17px;font-weight:700;margin-bottom:20px;color:#0f172a}
+    .field-label{font-size:13px;font-weight:600;color:#374151;margin-bottom:4px;display:block}
+    .field-hint{font-size:11px;color:#94a3b8;margin-top:3px}
+    .form-row{margin-bottom:14px}
+    .toggle-wrap{display:flex;align-items:center;gap:10px}
+    .toggle{width:40px;height:22px;border-radius:11px;background:#e2e8f0;position:relative;cursor:pointer;border:none;transition:background .2s;flex-shrink:0}
+    .toggle.on{background:#5c59f2}
+    .toggle::after{content:'';width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;top:3px;left:3px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+    .toggle.on::after{left:21px}
+    .group-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:20px 24px;margin-bottom:12px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+    .group-card:hover{border-color:#5c59f2;box-shadow:0 0 0 3px rgba(92,89,242,.08)}
+    .group-card.base{border-color:#e2e8f0;background:#fafbff;cursor:default}
+    .group-icon{width:42px;height:42px;border-radius:10px;background:#f1f0fe;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .group-info{flex:1;min-width:0}
+    .group-name{font-size:15px;font-weight:700;color:#0f172a}
+    .group-meta{font-size:12px;color:#64748b;margin-top:2px}
+    .group-stats{display:flex;gap:20px;margin-left:auto;flex-shrink:0}
+    .stat-item{text-align:center}
+    .stat-val{font-size:16px;font-weight:700;color:#0f172a}
+    .stat-lbl{font-size:11px;color:#94a3b8}
+    .toast{position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.15);transition:opacity .3s}
+    .toast.success{background:#10b981;color:#fff}
+    .toast.error{background:#ef4444;color:#fff}
+    /* Manage panel */
+    .panel{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:24px;margin-top:16px}
+    .panel-title{font-size:15px;font-weight:700;color:#0f172a;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+    .member-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f1f5f9}
+    .member-row:last-child{border-bottom:none}
+    .member-avatar{width:32px;height:32px;border-radius:50%;background:#e8e7fe;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#5c59f2;flex-shrink:0}
+    .customer-result{display:flex;align-items:center;gap:12px;padding:10px;border-radius:8px;cursor:pointer;border:1px solid #e2e8f0;margin-bottom:6px;transition:border-color .15s}
+    .customer-result:hover{border-color:#5c59f2;background:#faf9ff}
+    .spinner{display:inline-block;width:16px;height:16px;border:2px solid #e2e8f0;border-top-color:#5c59f2;border-radius:50%;animation:spin .6s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .empty-state{text-align:center;padding:40px 20px;color:#94a3b8}
+    .empty-state i{width:36px;height:36px;margin:0 auto 12px;display:block;opacity:.4}
+  </style>
 </head>
 <body class="app-shell">
   <div class="topbar">Logged in via Shopify. If you need to modify teams or account details, please <a href="#" style="text-decoration:underline;font-weight:700">logout</a> and sign in with your TradeLayer account. <a href="#" style="text-decoration:underline">Learn more</a></div>
@@ -26,144 +65,506 @@
         <div class="foot-link"><i data-lucide="log-out" class="w-4 h-4"></i><span>Sign out</span></div>
       </div>
     </aside>
+
     <main class="main">
       <div class="page">
+
+        <!-- ── Page header ── -->
         <div class="page-header">
           <div>
             <h1 class="page-title">Customer Groups</h1>
-            <p class="page-subtitle">Segment buyers into groups to manage pricing, discounting, catalog visibility, and rules from one place.</p>
+            <p class="page-subtitle">Segment buyers into groups to manage pricing, discounting, catalog visibility, and login rules from one place.</p>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-primary" onclick="openCreateModal()">
+              <i data-lucide="plus"></i>Create customer group
+            </button>
           </div>
         </div>
 
-    <!-- Create Group Modal -->
-    <div id="create-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;display:none;align-items:center;justify-content:center">
-      <div class="card" style="width:480px;padding:24px;background:#fff">
-        <h2 style="font-size:16px;font-weight:700;margin-bottom:16px">Create Customer Group</h2>
-        <label style="display:block;margin-bottom:12px">
-          <div style="font-size:13px;font-weight:600;margin-bottom:4px">Name *</div>
-          <input id="new-group-name" class="field" style="width:100%" placeholder="e.g. Wholesale Customers" />
-        </label>
-        <label style="display:block;margin-bottom:12px">
-          <div style="font-size:13px;font-weight:600;margin-bottom:4px">Description</div>
-          <input id="new-group-desc" class="field" style="width:100%" placeholder="Optional description" />
-        </label>
-        <label style="display:block;margin-bottom:20px">
-          <div style="font-size:13px;font-weight:600;margin-bottom:4px">Shopify Tag (for tag-based pricing)</div>
-          <input id="new-group-tag" class="field" style="width:100%" placeholder="e.g. wholesale" />
-          <div style="font-size:12px;color:#94a3b8;margin-top:4px">Customers with this Shopify tag will automatically get this group's pricing.</div>
-        </label>
-        <div style="display:flex;gap:8px;justify-content:flex-end">
-          <button class="btn" onclick="closeModal()">Cancel</button>
-          <button class="btn btn-primary" onclick="submitCreateGroup()">Create Group</button>
+        <!-- ── Search bar ── -->
+        <div class="toolbar" style="margin-bottom:20px">
+          <div class="search">
+            <i data-lucide="search"></i>
+            <input type="text" id="group-search" placeholder="Search customer groups…" oninput="filterGroups(this.value)" />
+          </div>
         </div>
-        <div id="modal-error" style="color:#ef4444;font-size:13px;margin-top:8px;display:none"></div>
-      </div>
-    </div>
 
-    <div class="toolbar">
-      <div class="search"><i data-lucide="search"></i><input type="text" id="group-search" placeholder="Search customer groups..." oninput="filterGroups(this.value)" /></div>
-      <button class="btn btn-primary" onclick="openModal()"><i data-lucide="plus"></i>Create customer group</button>
-    </div>
-    <div class="card">
-      <div class="table-wrap"><table class="table">
-        <thead><tr><th>Name</th><th>Shopify Tag</th><th>Customers</th><th>Status</th><th></th></tr></thead>
-        <tbody id="groups-tbody">
-          <tr><td colspan="5" style="text-align:center;padding:32px;color:#94a3b8">Loading…</td></tr>
-        </tbody>
-      </table></div>
-    </div>
+        <!-- ── Base customer group card ── -->
+        <div class="group-card base" style="margin-bottom:20px">
+          <div class="group-icon" style="background:#f0fdf4">
+            <i data-lucide="users" style="width:20px;height:20px;color:#10b981"></i>
+          </div>
+          <div class="group-info">
+            <div class="group-name">Base customer group</div>
+            <div class="group-meta">Default settings applied to all B2B customers not in a specific group</div>
+            <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">
+              <span class="badge badge-success">Default pricing</span>
+              <span class="badge" style="background:#f1f5f9;color:#64748b">All products visible</span>
+              <span class="badge" style="background:#f1f5f9;color:#64748b">Login optional</span>
+            </div>
+          </div>
+          <button class="btn" style="margin-left:auto;flex-shrink:0" onclick="showToast('Base group editing coming soon','info')">
+            <i data-lucide="settings-2"></i> Edit base settings
+          </button>
+        </div>
+
+        <!-- ── Groups list ── -->
+        <div id="groups-list">
+          <div class="empty-state">
+            <span class="spinner"></span>
+            <div style="margin-top:12px">Loading groups…</div>
+          </div>
+        </div>
+
+        <!-- ── Manage panel (shown below group cards) ── -->
+        <div id="manage-panel" style="display:none"></div>
 
       </div>
     </main>
   </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       CREATE / EDIT GROUP MODAL
+  ══════════════════════════════════════════════════════════════ -->
+  <div id="group-modal" class="tl-modal-backdrop" style="display:none" onclick="closeModalOnBackdrop(event)">
+    <div class="tl-modal" onclick="event.stopPropagation()">
+      <h2 id="modal-title">Create Customer Group</h2>
+
+      <div class="form-row">
+        <label class="field-label" for="m-name">Group name *</label>
+        <input id="m-name" class="field" style="width:100%" placeholder="e.g. Wholesale Customers" />
+      </div>
+      <div class="form-row">
+        <label class="field-label" for="m-desc">Description</label>
+        <input id="m-desc" class="field" style="width:100%" placeholder="Optional description" />
+      </div>
+      <div class="form-row">
+        <label class="field-label" for="m-tag">Shopify tag</label>
+        <input id="m-tag" class="field" style="width:100%" placeholder="e.g. wholesale, b2b" />
+        <div class="field-hint">Customers with this Shopify tag automatically join this group and receive its pricing. Leave blank to use manual assignment only.</div>
+      </div>
+      <div class="form-row">
+        <label class="field-label" for="m-discount">Default discount (%)</label>
+        <input id="m-discount" class="field" style="width:140px" type="number" min="0" max="100" step="0.01" placeholder="0" />
+        <div class="field-hint">Applied store-wide to this group. You can override per-product in the Price Editor.</div>
+      </div>
+      <div class="form-row">
+        <span class="field-label">Login required</span>
+        <div class="toggle-wrap">
+          <button type="button" id="m-login-toggle" class="toggle" onclick="toggleBtn(this)"></button>
+          <span id="m-login-label" style="font-size:13px;color:#64748b">No — guests can browse</span>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="field-label" for="m-catalog">Catalog visibility</label>
+        <select id="m-catalog" class="field" style="height:40px">
+          <option value="all">All products</option>
+          <option value="private">Private catalog</option>
+          <option value="quote">Quote-only</option>
+        </select>
+      </div>
+
+      <div id="modal-error" style="display:none;color:#ef4444;font-size:13px;margin-bottom:12px"></div>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" id="modal-save-btn" onclick="submitModal()">Create group</button>
+      </div>
+    </div>
+  </div>
+
   <script src="assets/js/app.js"></script>
   <script src="assets/js/api.js"></script>
   <script>
-    let allGroups = [];
+  // ── State ──────────────────────────────────────────────────────────────────
+  let allGroups = [];
+  let editingGroupId = null;   // null = create, string = edit
+  let activeManageId = null;   // group ID currently being managed
 
-    function renderGroups(groups) {
-      const tbody = document.getElementById('groups-tbody');
-      if (!groups.length) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:#94a3b8">No customer groups yet. Create one to get started.</td></tr>';
+  // ── Utility ───────────────────────────────────────────────────────────────
+  function esc(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function numericId(gid) {
+    const m = String(gid).match(/(\d+)$/);
+    return m ? m[1] : gid;
+  }
+
+  function initials(first, last) {
+    return ((first?.[0] ?? '') + (last?.[0] ?? '')).toUpperCase() || '?';
+  }
+
+  function toggleBtn(btn) {
+    btn.classList.toggle('on');
+    const label = document.getElementById('m-login-label');
+    if (label) label.textContent = btn.classList.contains('on') ? 'Yes — login required' : 'No — guests can browse';
+  }
+
+  let toastTimer = null;
+  function showToast(msg, type = 'success') {
+    let t = document.getElementById('tl-toast');
+    if (!t) { t = document.createElement('div'); t.id = 'tl-toast'; t.className = 'toast'; document.body.appendChild(t); }
+    t.className = 'toast ' + type;
+    t.textContent = msg;
+    t.style.opacity = '1';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.style.opacity = '0'; }, 3000);
+  }
+
+  // ── Load groups ────────────────────────────────────────────────────────────
+  async function loadGroups() {
+    try {
+      const data = await TL.loadCustomerGroups();
+      allGroups = data.customerGroups || [];
+      renderGroupList(allGroups);
+    } catch (e) {
+      document.getElementById('groups-list').innerHTML =
+        `<div class="empty-state" style="color:#ef4444">Failed to load: ${esc(e.message)}</div>`;
+    }
+  }
+
+  function filterGroups(q) {
+    const lc = q.toLowerCase();
+    const filtered = q
+      ? allGroups.filter(g =>
+          g.name.toLowerCase().includes(lc) ||
+          (g.shopifyTag || '').toLowerCase().includes(lc) ||
+          (g.description || '').toLowerCase().includes(lc))
+      : allGroups;
+    renderGroupList(filtered);
+  }
+
+  function catalogLabel(v) {
+    if (v === 'private') return '<span class="badge badge-brand">Private catalog</span>';
+    if (v === 'quote')   return '<span class="badge badge-warning">Quote-only</span>';
+    return '<span class="badge" style="background:#f1f5f9;color:#64748b">All products</span>';
+  }
+
+  function renderGroupList(groups) {
+    const container = document.getElementById('groups-list');
+    if (!groups.length) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <i data-lucide="users-round"></i>
+          <div style="font-weight:600;color:#475569;margin-bottom:4px">No customer groups yet</div>
+          <div>Create a group to start segmenting your B2B buyers.</div>
+        </div>`;
+      if (window.lucide) lucide.createIcons();
+      return;
+    }
+
+    container.innerHTML = groups.map(g => {
+      const count = g._count?.members ?? 0;
+      const isManaged = g.id === activeManageId;
+      return `
+        <div class="group-card${isManaged ? ' border-brand' : ''}" id="card-${g.id}" style="${isManaged ? 'border-color:#5c59f2;box-shadow:0 0 0 3px rgba(92,89,242,.1)' : ''}">
+          <div class="group-icon">
+            <i data-lucide="users" style="width:20px;height:20px;color:#5c59f2"></i>
+          </div>
+          <div class="group-info">
+            <div class="group-name">${esc(g.name)}</div>
+            ${g.description ? `<div class="group-meta">${esc(g.description)}</div>` : ''}
+            <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+              ${g.shopifyTag ? `<span class="badge badge-cyan"><i data-lucide="tag" style="width:10px;height:10px;margin-right:3px"></i>Auto-synced: ${esc(g.shopifyTag)}</span>` : ''}
+              ${g.isActive ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-warning">Inactive</span>'}
+              ${catalogLabel(g.catalogVisibility)}
+            </div>
+          </div>
+          <div class="group-stats">
+            <div class="stat-item"><div class="stat-val">${count}</div><div class="stat-lbl">Customers</div></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-left:16px;flex-shrink:0">
+            <button class="btn" onclick="openEditModal('${g.id}');event.stopPropagation()">Edit</button>
+            <button class="btn btn-primary" onclick="toggleManage('${g.id}');event.stopPropagation()">${isManaged ? 'Close' : 'Manage'}</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    if (window.lucide) lucide.createIcons();
+
+    // Re-render manage panel if one is active
+    if (activeManageId) {
+      const g = allGroups.find(x => x.id === activeManageId);
+      if (g) renderManagePanel(g);
+    }
+  }
+
+  // ── Manage panel ──────────────────────────────────────────────────────────
+  async function toggleManage(groupId) {
+    if (activeManageId === groupId) {
+      activeManageId = null;
+      document.getElementById('manage-panel').style.display = 'none';
+      renderGroupList(allGroups);
+      return;
+    }
+    activeManageId = groupId;
+    renderGroupList(allGroups);
+    const panel = document.getElementById('manage-panel');
+    panel.style.display = 'block';
+    panel.innerHTML = '<div class="panel"><div style="text-align:center;padding:24px"><span class="spinner"></span></div></div>';
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    try {
+      const data = await TL.loadCustomerGroup(groupId);
+      renderManagePanel(data.customerGroup);
+    } catch (e) {
+      panel.innerHTML = `<div class="panel"><div style="color:#ef4444">Failed to load: ${esc(e.message)}</div></div>`;
+    }
+  }
+
+  function renderManagePanel(group) {
+    const members = group.members || [];
+    const rules = group.pricingRules || [];
+    const qs = typeof getNavQS === 'function' ? getNavQS() : '';
+
+    const membersHtml = members.length
+      ? members.map(m => {
+          const nid = numericId(m.shopifyCustomerId);
+          return `
+            <div class="member-row">
+              <div class="member-avatar">${nid.slice(-2)}</div>
+              <div style="flex:1">
+                <div style="font-size:13px;font-weight:600;color:#0f172a">Customer #${nid}</div>
+                <div style="font-size:11px;color:#94a3b8">${esc(m.shopifyCustomerId)}</div>
+              </div>
+              <button class="btn" style="font-size:12px;padding:4px 10px" onclick="removeMember('${group.id}','${esc(m.shopifyCustomerId)}',this)">Remove</button>
+            </div>`;
+        }).join('')
+      : '<div class="empty-state" style="padding:24px 0"><div style="font-size:13px">No members yet. Add customers below.</div></div>';
+
+    const rulesHtml = rules.length
+      ? rules.map(r => `
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9">
+            <span class="badge ${r.ruleType === 'fixed_price' ? 'badge-success' : 'badge-brand'}">${r.ruleType.replace(/_/g,' ')}</span>
+            <span style="font-size:13px;font-weight:600">${r.ruleType === 'percentage_discount' ? r.value + '%' : '€' + Number(r.value).toFixed(2)}</span>
+            ${r.shopifyProductId ? `<span style="font-size:11px;color:#94a3b8">Product #${numericId(r.shopifyProductId)}</span>` : '<span style="font-size:11px;color:#94a3b8">All products</span>'}
+          </div>`).join('')
+      : '<div style="font-size:13px;color:#94a3b8;padding:12px 0">No pricing rules for this group yet.</div>';
+
+    document.getElementById('manage-panel').innerHTML = `
+      <div class="panel">
+        <div class="panel-title">
+          <span><i data-lucide="users" style="width:16px;height:16px;margin-right:6px;vertical-align:-2px;color:#5c59f2"></i>Managing: ${esc(group.name)}</span>
+          <button class="btn" onclick="toggleManage('${group.id}')">Close</button>
+        </div>
+
+        ${group.shopifyTag ? `
+          <div class="banner" style="margin-bottom:20px">
+            <div class="icon-wrap"><i data-lucide="tag" class="w-5 h-5"></i></div>
+            <div>
+              <div style="font-weight:700;font-size:14px">Auto-synced via tag: <code style="background:#f1f0fe;padding:2px 6px;border-radius:4px;font-size:13px">${esc(group.shopifyTag)}</code></div>
+              <div style="font-size:12px;opacity:.9">Customers with this Shopify tag automatically get this group's pricing — no manual assignment needed.</div>
+            </div>
+          </div>` : ''}
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+          <!-- Members -->
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
+              <span>Members (${members.length})</span>
+              <span style="font-size:11px;color:#94a3b8;font-weight:400">Manual assignment</span>
+            </div>
+            <div id="members-list-${group.id}">${membersHtml}</div>
+
+            <!-- Customer search -->
+            <div style="margin-top:16px">
+              <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Add customer</div>
+              <div class="search" style="margin-bottom:8px">
+                <i data-lucide="search"></i>
+                <input type="text" id="cust-search-${group.id}" placeholder="Search by name or email…"
+                  oninput="debounceCustomerSearch('${group.id}', this.value)" />
+              </div>
+              <div id="cust-results-${group.id}"></div>
+            </div>
+          </div>
+
+          <!-- Pricing rules -->
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
+              <span>Pricing rules (${rules.length})</span>
+              <a href="price-editor.html${qs}" style="font-size:12px;color:#5c59f2;font-weight:600">Price Editor →</a>
+            </div>
+            <div>${rulesHtml}</div>
+            <a href="price-editor.html${qs}" class="btn" style="margin-top:12px;display:inline-flex">
+              <i data-lucide="badge-dollar-sign"></i> Edit prices for this group
+            </a>
+          </div>
+
+        </div>
+      </div>
+    `;
+    if (window.lucide) lucide.createIcons();
+  }
+
+  // ── Member actions ─────────────────────────────────────────────────────────
+  let searchTimers = {};
+
+  function debounceCustomerSearch(groupId, q) {
+    clearTimeout(searchTimers[groupId]);
+    const resultEl = document.getElementById('cust-results-' + groupId);
+    if (!q.trim()) { resultEl.innerHTML = ''; return; }
+    resultEl.innerHTML = '<div style="font-size:12px;color:#94a3b8;padding:4px 0"><span class="spinner"></span></div>';
+    searchTimers[groupId] = setTimeout(() => doCustomerSearch(groupId, q), 400);
+  }
+
+  async function doCustomerSearch(groupId, q) {
+    const resultEl = document.getElementById('cust-results-' + groupId);
+    if (!resultEl) return;
+    try {
+      const data = await TL.searchCustomers(q);
+      const customers = data.customers || [];
+      if (!customers.length) {
+        resultEl.innerHTML = '<div style="font-size:12px;color:#94a3b8;padding:4px 0">No customers found.</div>';
         return;
       }
-      tbody.innerHTML = groups.map(g => `
-        <tr>
-          <td>
-            <strong>${escHtml(g.name)}</strong>
-            ${g.description ? `<div class="muted">${escHtml(g.description)}</div>` : ''}
-          </td>
-          <td>${g.shopifyTag ? `<span class="badge badge-cyan">${escHtml(g.shopifyTag)}</span>` : '<span style="color:#94a3b8">—</span>'}</td>
-          <td>${g._count?.members ?? 0}</td>
-          <td>${g.isActive ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-warning">Inactive</span>'}</td>
-          <td>
-            <button class="btn" onclick="deleteGroup('${g.id}', '${escHtml(g.name).replace(/'/g,"\\'")}')">Delete</button>
-          </td>
-        </tr>
-      `).join('');
+      resultEl.innerHTML = customers.slice(0, 8).map(c => `
+        <div class="customer-result" onclick="addMember('${groupId}','${esc(c.gid)}','${esc(c.firstName || '')} ${esc(c.lastName || '')}',this)">
+          <div class="member-avatar" style="background:#f1f0fe;color:#5c59f2">${initials(c.firstName, c.lastName)}</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600">${esc((c.firstName || '') + ' ' + (c.lastName || '')).trim() || 'Unnamed'}</div>
+            <div style="font-size:11px;color:#94a3b8">${esc(c.email || '')} &bull; #${c.id}</div>
+          </div>
+          <button class="btn btn-primary" style="font-size:12px;padding:4px 10px">Add</button>
+        </div>`).join('');
+    } catch (e) {
+      resultEl.innerHTML = `<div style="font-size:12px;color:#ef4444">Error: ${esc(e.message)}</div>`;
+    }
+  }
+
+  async function addMember(groupId, shopifyCustomerId, displayName, el) {
+    el.style.opacity = '.5';
+    el.style.pointerEvents = 'none';
+    try {
+      await TL.addGroupMember(groupId, shopifyCustomerId);
+      showToast(`${displayName || shopifyCustomerId} added to group`, 'success');
+      // Clear search and refresh panel
+      const inp = document.getElementById('cust-search-' + groupId);
+      if (inp) inp.value = '';
+      const res = document.getElementById('cust-results-' + groupId);
+      if (res) res.innerHTML = '';
+      // Reload group detail
+      const data = await TL.loadCustomerGroup(groupId);
+      renderManagePanel(data.customerGroup);
+      // Update count in card
+      await loadGroups();
+    } catch (e) {
+      showToast('Failed: ' + e.message, 'error');
+      el.style.opacity = '';
+      el.style.pointerEvents = '';
+    }
+  }
+
+  async function removeMember(groupId, shopifyCustomerId, btn) {
+    if (!confirm('Remove this customer from the group?')) return;
+    btn.disabled = true;
+    btn.textContent = '…';
+    try {
+      await TL.removeGroupMember(groupId, shopifyCustomerId);
+      showToast('Customer removed from group', 'success');
+      const data = await TL.loadCustomerGroup(groupId);
+      renderManagePanel(data.customerGroup);
+      await loadGroups();
+    } catch (e) {
+      showToast('Failed: ' + e.message, 'error');
+      btn.disabled = false;
+      btn.textContent = 'Remove';
+    }
+  }
+
+  // ── Create / Edit modal ────────────────────────────────────────────────────
+  function openCreateModal() {
+    editingGroupId = null;
+    document.getElementById('modal-title').textContent = 'Create Customer Group';
+    document.getElementById('modal-save-btn').textContent = 'Create group';
+    document.getElementById('m-name').value = '';
+    document.getElementById('m-desc').value = '';
+    document.getElementById('m-tag').value = '';
+    document.getElementById('m-discount').value = '';
+    document.getElementById('m-catalog').value = 'all';
+    const tog = document.getElementById('m-login-toggle');
+    tog.classList.remove('on');
+    document.getElementById('m-login-label').textContent = 'No — guests can browse';
+    document.getElementById('modal-error').style.display = 'none';
+    document.getElementById('group-modal').style.display = 'flex';
+    document.getElementById('m-name').focus();
+  }
+
+  async function openEditModal(groupId) {
+    const g = allGroups.find(x => x.id === groupId);
+    if (!g) return;
+    editingGroupId = groupId;
+    document.getElementById('modal-title').textContent = 'Edit Customer Group';
+    document.getElementById('modal-save-btn').textContent = 'Save changes';
+    document.getElementById('m-name').value = g.name;
+    document.getElementById('m-desc').value = g.description || '';
+    document.getElementById('m-tag').value = g.shopifyTag || '';
+    document.getElementById('m-discount').value = '';
+    document.getElementById('m-catalog').value = g.catalogVisibility || 'all';
+    const tog = document.getElementById('m-login-toggle');
+    const loginOn = !!g.loginRequired;
+    loginOn ? tog.classList.add('on') : tog.classList.remove('on');
+    document.getElementById('m-login-label').textContent = loginOn ? 'Yes — login required' : 'No — guests can browse';
+    document.getElementById('modal-error').style.display = 'none';
+    document.getElementById('group-modal').style.display = 'flex';
+    document.getElementById('m-name').focus();
+  }
+
+  function closeModal() {
+    document.getElementById('group-modal').style.display = 'none';
+    editingGroupId = null;
+  }
+
+  function closeModalOnBackdrop(e) {
+    if (e.target === document.getElementById('group-modal')) closeModal();
+  }
+
+  async function submitModal() {
+    const name = document.getElementById('m-name').value.trim();
+    const description = document.getElementById('m-desc').value.trim();
+    const shopifyTag = document.getElementById('m-tag').value.trim().toLowerCase();
+    const errEl = document.getElementById('modal-error');
+
+    if (!name) {
+      errEl.textContent = 'Group name is required.';
+      errEl.style.display = 'block';
+      return;
     }
 
-    function filterGroups(q) {
-      const lc = q.toLowerCase();
-      renderGroups(q ? allGroups.filter(g => g.name.toLowerCase().includes(lc) || (g.shopifyTag || '').toLowerCase().includes(lc)) : allGroups);
-    }
+    const saveBtn = document.getElementById('modal-save-btn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving…';
+    errEl.style.display = 'none';
 
-    function escHtml(s) {
-      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
+    const payload = {
+      name,
+      description: description || undefined,
+      shopifyTag: shopifyTag || undefined,
+    };
 
-    async function loadGroups() {
-      try {
-        const data = await TL.loadCustomerGroups();
-        allGroups = data.customerGroups || [];
-        renderGroups(allGroups);
-      } catch (e) {
-        document.getElementById('groups-tbody').innerHTML = `<tr><td colspan="5" style="text-align:center;padding:32px;color:#ef4444">Failed to load: ${e.message}</td></tr>`;
+    try {
+      if (editingGroupId) {
+        await TL.updateCustomerGroup(editingGroupId, payload);
+        showToast('Group updated', 'success');
+      } else {
+        await TL.createCustomerGroup(payload);
+        showToast('Group created', 'success');
       }
+      closeModal();
+      await loadGroups();
+    } catch (e) {
+      errEl.textContent = 'Error: ' + e.message;
+      errEl.style.display = 'block';
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = editingGroupId ? 'Save changes' : 'Create group';
     }
+  }
 
-    function openModal() {
-      const m = document.getElementById('create-modal');
-      m.style.display = 'flex';
-      document.getElementById('new-group-name').value = '';
-      document.getElementById('new-group-desc').value = '';
-      document.getElementById('new-group-tag').value = '';
-      document.getElementById('modal-error').style.display = 'none';
-    }
-
-    function closeModal() {
-      document.getElementById('create-modal').style.display = 'none';
-    }
-
-    async function submitCreateGroup() {
-      const name = document.getElementById('new-group-name').value.trim();
-      const description = document.getElementById('new-group-desc').value.trim();
-      const shopifyTag = document.getElementById('new-group-tag').value.trim();
-      const errEl = document.getElementById('modal-error');
-      if (!name) { errEl.textContent = 'Name is required.'; errEl.style.display = 'block'; return; }
-      try {
-        await TL.createCustomerGroup({ name, description: description || undefined, shopifyTag: shopifyTag || undefined });
-        closeModal();
-        loadGroups();
-      } catch (e) {
-        errEl.textContent = 'Error: ' + e.message;
-        errEl.style.display = 'block';
-      }
-    }
-
-    async function deleteGroup(id, name) {
-      if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
-      try {
-        await TL.deleteCustomerGroup(id);
-        loadGroups();
-      } catch (e) {
-        alert('Failed to delete: ' + e.message);
-      }
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      loadGroups();
-    });
+  // ── Init ───────────────────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', loadGroups);
   </script>
 </body>
 </html>

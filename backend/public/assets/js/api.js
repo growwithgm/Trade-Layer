@@ -1,98 +1,123 @@
-// TradeLayer API client — calls the authenticated Express backend
-// All endpoints require the Shopify session cookie (same-origin).
+// TradeLayer API client — calls the authenticated Express backend.
+// Uses Shopify App Bridge session token when available (same-origin + token auth).
 
-async function tlFetch(path, opts = {}) {
-  const r = await fetch(path, { credentials: 'same-origin', ...opts });
-  if (!r.ok) {
-    const text = await r.text().catch(() => r.statusText);
-    throw new Error(`${r.status} ${text}`);
+async function getSessionToken() {
+  try {
+    if (window.shopify) return await window.shopify.idToken();
+  } catch (e) { /* not in iframe or bridge not ready */ }
+  return null;
+}
+
+async function apiFetch(url, options = {}) {
+  const token = await getSessionToken();
+  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  const res = await fetch(url, { credentials: 'same-origin', ...options, headers });
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.statusText);
+    throw new Error(`${res.status} ${text}`);
   }
-  return r.json();
+  return res.json();
 }
 
 // ── Customer Groups ───────────────────────────────────────────────────────────
 
-async function loadCustomerGroups() {
-  return tlFetch('/api/customer-groups');
+function loadCustomerGroups() {
+  return apiFetch('/api/customer-groups');
 }
 
-async function createCustomerGroup(data) {
-  return tlFetch('/api/customer-groups', {
+function loadCustomerGroup(id) {
+  return apiFetch(`/api/customer-groups/${id}`);
+}
+
+function createCustomerGroup(data) {
+  return apiFetch('/api/customer-groups', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
 }
 
-async function deleteCustomerGroup(id) {
-  return tlFetch(`/api/customer-groups/${id}`, { method: 'DELETE' });
+function updateCustomerGroup(id, data) {
+  return apiFetch(`/api/customer-groups/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+function deleteCustomerGroup(id) {
+  return apiFetch(`/api/customer-groups/${id}`, { method: 'DELETE' });
+}
+
+function addGroupMember(groupId, shopifyCustomerId) {
+  return apiFetch(`/api/customer-groups/${groupId}/members`, {
+    method: 'POST',
+    body: JSON.stringify({ shopifyCustomerId }),
+  });
+}
+
+function removeGroupMember(groupId, shopifyCustomerId) {
+  return apiFetch(`/api/customer-groups/${groupId}/members/${encodeURIComponent(shopifyCustomerId)}`, {
+    method: 'DELETE',
+  });
+}
+
+// ── Customers ─────────────────────────────────────────────────────────────────
+
+function searchCustomers(query) {
+  return apiFetch(`/api/customers/search?query=${encodeURIComponent(query)}`);
 }
 
 // ── Pricing Rules ─────────────────────────────────────────────────────────────
 
-async function loadPricingRules(params = {}) {
-  const qs = new URLSearchParams(params).toString();
-  return tlFetch(`/api/pricing-rules${qs ? '?' + qs : ''}`);
+function loadPricingRules(params) {
+  const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+  return apiFetch(`/api/pricing-rules${qs}`);
 }
 
-async function loadPricingByProduct(shopifyProductId) {
-  return tlFetch(`/api/pricing-rules/by-product?shopifyProductId=${encodeURIComponent(shopifyProductId)}`);
-}
-
-async function quickUpdatePricing(updates) {
-  return tlFetch('/api/pricing-rules/quick-update', {
+function quickUpdatePricing(data) {
+  return apiFetch('/api/pricing-rules/quick-update', {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ updates }),
+    body: JSON.stringify(data),
   });
 }
 
-async function deletePricingRule(id) {
-  return tlFetch(`/api/pricing-rules/${id}`, { method: 'DELETE' });
+function deletePricingRule(id) {
+  return apiFetch(`/api/pricing-rules/${id}`, { method: 'DELETE' });
 }
 
 // ── Products ──────────────────────────────────────────────────────────────────
 
-async function loadProducts(params = {}) {
-  const qs = new URLSearchParams(params).toString();
-  return tlFetch(`/api/products${qs ? '?' + qs : ''}`);
+function loadProducts(params) {
+  const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+  return apiFetch(`/api/products${qs}`);
+}
+
+function searchProducts(query) {
+  return apiFetch(`/api/products/search?query=${encodeURIComponent(query)}`);
 }
 
 // ── Settings ──────────────────────────────────────────────────────────────────
 
-async function loadSettings() {
-  return tlFetch('/api/settings');
+function loadSettings() {
+  return apiFetch('/api/settings');
 }
 
-// ── DOM helpers ───────────────────────────────────────────────────────────────
-
-function showTableLoading(tbodyId) {
-  const tbody = document.getElementById(tbodyId);
-  if (tbody) tbody.innerHTML = '<tr><td colspan="99" style="text-align:center;padding:32px;color:#94a3b8">Loading…</td></tr>';
-}
-
-function showTableError(tbodyId, msg) {
-  const tbody = document.getElementById(tbodyId);
-  if (tbody) tbody.innerHTML = `<tr><td colspan="99" style="text-align:center;padding:32px;color:#ef4444">${msg}</td></tr>`;
-}
-
-function showTableEmpty(tbodyId, msg = 'No records found.') {
-  const tbody = document.getElementById(tbodyId);
-  if (tbody) tbody.innerHTML = `<tr><td colspan="99" style="text-align:center;padding:32px;color:#94a3b8">${msg}</td></tr>`;
-}
+// ── Export on window ──────────────────────────────────────────────────────────
 
 window.TL = {
-  fetch: tlFetch,
+  fetch: apiFetch,
   loadCustomerGroups,
+  loadCustomerGroup,
   createCustomerGroup,
+  updateCustomerGroup,
   deleteCustomerGroup,
+  addGroupMember,
+  removeGroupMember,
+  searchCustomers,
   loadPricingRules,
-  loadPricingByProduct,
   quickUpdatePricing,
   deletePricingRule,
   loadProducts,
+  searchProducts,
   loadSettings,
-  showTableLoading,
-  showTableError,
-  showTableEmpty,
 };

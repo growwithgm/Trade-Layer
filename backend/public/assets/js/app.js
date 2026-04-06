@@ -20,9 +20,19 @@ window.TL_PAGES = [
   {file:'settings.html', label:'Settings', icon:'settings', group:'settings'}
 ];
 
+// Returns ?shop=xxx&host=xxx from the current URL, or '' if neither is present.
+function getNavQS() {
+  const p = new URLSearchParams(window.location.search);
+  const parts = [];
+  if (p.get('shop')) parts.push('shop=' + encodeURIComponent(p.get('shop')));
+  if (p.get('host')) parts.push('host=' + encodeURIComponent(p.get('host')));
+  return parts.length ? '?' + parts.join('&') : '';
+}
+
 function renderSidebar(activeFile){
   const nav = document.getElementById('sidebar-nav');
   if(!nav) return;
+  const qs = getNavQS();
   const mainItems = TL_PAGES.filter(p => p.group === 'main');
   const pricingItems = TL_PAGES.filter(p => p.group === 'pricing');
   const orderItems = TL_PAGES.filter(p => p.group === 'orders');
@@ -32,7 +42,7 @@ function renderSidebar(activeFile){
     const cls = sub ? 'nav-sub-item' : 'nav-item';
     const active = page.file === activeFile ? ' active' : '';
     const icon = sub ? '' : `<i data-lucide="${page.icon}" class="w-4 h-4"></i>`;
-    return `<a href="${page.file}" class="${cls}${active}">${icon}<span>${page.label}</span></a>`;
+    return `<a href="${page.file}${qs}" class="${cls}${active}">${icon}<span>${page.label}</span></a>`;
   }
 
   nav.innerHTML = `
@@ -44,10 +54,22 @@ function renderSidebar(activeFile){
     <div class="nav-section-title">Controls</div>
     ${settingItems.map(p => item(p)).join('')}
     <div class="nav-section-title">Support</div>
-    <a href="#" class="nav-item"><i data-lucide="user" class="w-4 h-4"></i><span>Account</span></a>
-    <a href="#" class="nav-item"><i data-lucide="help-circle" class="w-4 h-4"></i><span>Help</span></a>
-    <a href="#" class="nav-item"><i data-lucide="arrow-left-right" class="w-4 h-4"></i><span>Return to Shopify</span></a>
+    <a href="#${qs}" class="nav-item"><i data-lucide="user" class="w-4 h-4"></i><span>Account</span></a>
+    <a href="#${qs}" class="nav-item"><i data-lucide="help-circle" class="w-4 h-4"></i><span>Help</span></a>
+    <a href="#${qs}" class="nav-item"><i data-lucide="arrow-left-right" class="w-4 h-4"></i><span>Return to Shopify</span></a>
   `;
+}
+
+// After rendering any dynamic links, patch all local .html hrefs to carry shop+host.
+function fixNavLinks() {
+  const qs = getNavQS();
+  if (!qs) return;
+  document.querySelectorAll('a[href]').forEach(link => {
+    const href = link.getAttribute('href');
+    if (href && href.endsWith('.html') && !href.startsWith('http')) {
+      link.setAttribute('href', href + qs);
+    }
+  });
 }
 
 function initCharts(){
@@ -88,6 +110,7 @@ function initCharts(){
 document.addEventListener('DOMContentLoaded', () => {
   const current = location.pathname.split('/').pop() || 'index.html';
   renderSidebar(current);
+  fixNavLinks();
   if(window.lucide) lucide.createIcons();
   initCharts();
 });
